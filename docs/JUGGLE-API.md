@@ -208,7 +208,12 @@ date-hour keys), `selectedDateHours[]` (available), `bookedDateHours[]`,
 Other weeks: `GET /sitters/{id}/schedule/go-to-week?date=YYYY-MM-DD` → returns
 the availability object **directly** (not wrapped in `{meta,user,data}`).
 
-### 3.8 Favorites — `GET /sitters?favorites=1` (FindASitter with `filters.favorites`) — VERIFIED live 2026-11-03; there is no `GET /favorites` (404)
+### 3.8 Favorites — derived from `GET /sitters` — VERIFIED live 2026-11-03; there is no `GET /favorites` (404)
+**`favorites=1` is echoed (`filters.favorites: "1"`) but does NOT filter**: the
+page still returns up to 200 sitters (the cap holds even for `numSitters=1000`;
+`data.totalNumSitters` gives the full count), with favorites sorted FIRST —
+with or without the param. The tools therefore keep only `isFavorite` rows,
+which is complete for a family with fewer than 200 favorites.
 There is no favorites page/component in the bundle. Favourite status is an
 `isFavorite` flag on sitter list items (3.5), sitter profiles (3.6) and booking
 sitters/requests (3.4). `juggle_list_favorites` must therefore be derived:
@@ -400,9 +405,9 @@ Use the owner's family account; record status + body SHAPE only (never values)
 into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 
 - [x] `POST /log-in` success shape: status, `{error:false?, redirectUrl}`, which cookies rotate.
-- [ ] Whether the pre-login `X-CSRF-TOKEN` still works after login, or a fresh `meta.csrfToken` / `X-XSRF-TOKEN` is required (try a harmless write-free check: a GET is CSRF-exempt, so test on the first real write).
+- [x] Whether the pre-login `X-CSRF-TOKEN` still works after login, or a fresh `meta.csrfToken` / `X-XSRF-TOKEN` is required (try a harmless write-free check: a GET is CSRF-exempt, so test on the first real write). **Answer: `meta.csrfToken` does NOT change on login, the pre-login token works for a write, and `X-XSRF-TOKEN` alone also works.** `XSRF-TOKEN` + `whyjuggle_session` cookies do rotate.
 - [x] Signed-out XHR to a page route (e.g. `/bookings`): 302 to `/log-in`? 401 JSON? 200 `meta.page:"LogIn"`? → finalises `isExpired`. **Answer: 200 `{redirect:true,url:"/log-in",screen:"LogIn"}`** — same for a stale cookie (§2 session expiry).
-- [ ] Stale session cookie on a write: 419? 401? → finalises replay rule.
+- [x] Stale session cookie on a write: 419? 401? → finalises replay rule. **Answer: 419 `{"message":"CSRF token mismatch."}`** for an unknown, missing or logged-out session cookie — the client's 419 → one re-login + replay rule holds.
 - [x] `GET /` (XHR) → `meta.page === "HomeFamily"`, `user.type === "family"`, `user.accountId` present.
 - [x] `GET /my-profile` data keys (§3.2) and item keys of `addrs/kids/pets`.
 - [x] `GET /bookings` item keys (§3.3); full status vocabulary.
@@ -437,6 +442,12 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
   → 200 `{"success":true}` (no id; the `/bookings` lookup identified it, status `open`); `GET /bookings/{id}/cancel`
   listed 7 reasons; `PATCH /bookings/{id}/cancel` with no penalty → 200, empty body; booking then `canceled`.
   Login + `GET /` token refresh, then the writes, used the post-login CSRF token — whether the PRE-login token
-  would also work is still unchecked.
+  would also work was checked next (below).
+- CSRF / stale session (favorite toggle only, restored): `meta.csrfToken` is unchanged by login; a write with the
+  pre-login `X-CSRF-TOKEN` alone succeeds, as does one with `X-XSRF-TOKEN` alone. A write with an unknown, missing or
+  logged-out session cookie → **419 `{"message":"CSRF token mismatch."}`**; a read with one → the 200 redirect
+  envelope (§2). `GET /log-out` as XHR answers `{redirect:true,url:"/",screen:"HomeNoUser"}` but did not end the
+  session; the plain (non-XHR) `GET /log-out` → 302 `/` does.
+- `/sitters?favorites=1` does not filter (see §3.8).
 - Writes: favorite / unfavorite verified (above). Accept / decline sitter, send message and leave review
   reach other people and were deliberately NOT exercised; their request shapes are bundle-derived.

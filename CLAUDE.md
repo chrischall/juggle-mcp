@@ -34,10 +34,13 @@ flip the claim tree-wide (`grep -rniE "unverified|verified" README.md docs/ skil
 - Login: `GET /log-in` (CSRF token from the XHR envelope or the HTML meta
   tag, plus `whyjuggle_session` + `XSRF-TOKEN` cookies) → `POST /log-in`
   `{email, password}` → `GET /` to confirm `user` is set and pick up the
-  rotated CSRF token (Laravel regenerates it on login).
+  latest CSRF token (live: the token does not actually change on login, but
+  the `XSRF-TOKEN` and `whyjuggle_session` cookies rotate).
 - `CookieSessionManager` (mcp-utils `/session`): single-flight login, and on an
   expiry signal **exactly one** re-login + replay. Expiry (`looksExpired`) =
-  401, 419, a redirect to `/log-in`, or the login page served in place
+  401, 419, a redirect to `/log-in`, the XHR redirect envelope
+  `{redirect: true, url: "/log-in"}` (what a stale-cookie read actually gets;
+  a stale-cookie write gets 419), or the login page served in place
   (`meta.page === "LogIn"` in JSON or in an HTML page's server-data) — page
   identity, never prose: message bodies are user text.
 - A rejected password (`{error:true}` or 422 on `POST /log-in`) and a missing
