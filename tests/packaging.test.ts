@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_BASE_URL } from '../src/config.js';
@@ -31,6 +31,18 @@ describe('packaging', () => {
     for (const f of ['dist', 'skills', '.claude-plugin', '.mcp.json', 'server.json', 'manifest.json', 'mint.yaml']) {
       expect(pkg.files, f).toContain(f);
     }
+  });
+
+  it('ships the juggle skill: frontmatter name, an executable helper, its own session file', () => {
+    const skill = text('skills/juggle/SKILL.md');
+    expect(skill).toMatch(/^---\nname: juggle\ndescription: >-\n/);
+    const helper = join(ROOT, 'skills/juggle/scripts/juggle');
+    expect(statSync(helper).mode & 0o111, 'helper must be executable').not.toBe(0);
+    const src = text('skills/juggle/scripts/juggle');
+    expect(src.startsWith('#!/usr/bin/env bash\n')).toBe(true);
+    expect(src).toContain('$HOME/.config/juggle/session');
+    // Never the MCP's state, never an rm -r of anything.
+    expect(src).not.toMatch(/juggle-mcp\/session|rm -r|rm -rf/);
   });
 
   it('denies install scripts by name, never by pinned version', () => {

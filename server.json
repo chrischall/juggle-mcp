@@ -18,15 +18,15 @@
       "environmentVariables": [
         {
           "name": "JUGGLE_EMAIL",
-          "description": "The email address you sign in to whyjuggle.com with (a family account).",
-          "isRequired": true,
+          "description": "The email address you sign in to whyjuggle.com with (a family account). Needed by every tool except juggle_list_locations; the server starts without it.",
+          "isRequired": false,
           "format": "string",
           "isSecret": false
         },
         {
           "name": "JUGGLE_PASSWORD",
-          "description": "Your whyjuggle.com password. Google/Facebook-only sign-ins are not supported.",
-          "isRequired": true,
+          "description": "Your whyjuggle.com password. Google/Facebook-only sign-ins are not supported. Needed by every tool except juggle_list_locations; the server starts without it.",
+          "isRequired": false,
           "format": "string",
           "isSecret": true
         },

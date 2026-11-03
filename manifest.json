@@ -36,6 +36,7 @@
       "env": {
         "JUGGLE_EMAIL": "${user_config.juggle_email}",
         "JUGGLE_PASSWORD": "${user_config.juggle_password}",
+        "JUGGLE_BASE_URL": "${user_config.juggle_base_url}",
         "MCP_CONFIRM_MODE": "${user_config.mcp_confirm_mode}"
       }
     }
@@ -44,16 +45,23 @@
     "juggle_email": {
       "type": "string",
       "title": "Juggle email",
-      "description": "The email address you sign in to whyjuggle.com with (a family account).",
-      "required": true,
+      "description": "The email address you sign in to whyjuggle.com with (a family account). Needed by every tool except juggle_list_locations; the server starts without it and the first tool call says it is missing.",
+      "required": false,
       "sensitive": false
     },
     "juggle_password": {
       "type": "string",
       "title": "Juggle password",
-      "description": "Your whyjuggle.com password. Google/Facebook-only sign-ins are not supported — set a password on the site first.",
-      "required": true,
+      "description": "Your whyjuggle.com password. Needed by every tool except juggle_list_locations. Google/Facebook-only sign-ins are not supported — set a password on the site first.",
+      "required": false,
       "sensitive": true
+    },
+    "juggle_base_url": {
+      "type": "string",
+      "title": "Juggle site URL (advanced)",
+      "description": "Site origin override, for tests or a local stub only. Leave as https://whyjuggle.com; must be https (loopback http allowed) because your password is sent there.",
+      "required": false,
+      "default": "https://whyjuggle.com"
     },
     "mcp_confirm_mode": {
       "type": "string",
