@@ -45,7 +45,7 @@ automatically.
 | `juggle_list_bookings` | List your sits/jobs: status, service, start time, booked sitter, pending applications; active, past or by status |
 | `juggle_get_booking` | One booking in detail: times, kids/pets, notes, applicants and booked sitters, payment total, what you can do |
 | `juggle_list_sitters` | Search sitters in your city by availability window, services, keywords or name |
-| `juggle_list_favorites` | List the sitters you have marked as favorites |
+| `juggle_list_favorites` | List the sitters you have marked as favorites. Reports `returned` (the favorites count) and, if Juggle's 200-sitter cap may have cut the list short, a `note`; since 0.1.1 it no longer reports `totalNumSitters`, which was the city-wide sitter count, not your favorites |
 | `juggle_get_sitter` | A sitter public profile: rating, experience, school, certifications, bio — never private details |
 | `juggle_get_reviews` | Reviews other families left for a sitter, with total count and average rating |
 | `juggle_list_conversations` | Your message conversations with sitters: last message, time, unread count |
