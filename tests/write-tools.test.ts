@@ -132,6 +132,35 @@ describe('juggle_post_job', () => {
     expect(result.json).toMatchObject({ posted: true, bookingId: 3010 });
   });
 
+  it('estimates 2 kids at the 2-kid base rate with one sitter', async () => {
+    const s = site();
+    const r = await previewOnly(s, makeClient(s), 'juggle_post_job', args);
+    expect(JSON.stringify(r.json)).toContain('"estimate"');
+    expect(r.json).toMatchObject({ preview: { estimate: { baseRatePerHourUsd: 20, sitters: 1, totalUsd: 80 } } });
+  });
+
+  it('prices 5+ kids at the multisitter rate per sitter, ceil(kids/4) sitters, as the site does', async () => {
+    const s = site();
+    const r = await previewOnly(s, makeClient(s), 'juggle_post_job', { ...args, num_kids: 5 });
+    // fixture multisitter = 1800 c/h; 2 sitters x 4 h
+    expect(r.json).toMatchObject({ preview: { estimate: { baseRatePerHourUsd: 18, sitters: 2, totalUsd: 144 } } });
+  });
+
+  it('prices homeschool help with the kids rates and sitter count, as the site does', async () => {
+    const s = site();
+    const r = await previewOnly(s, makeClient(s), 'juggle_post_job', { ...args, service: 'homeschool_help', num_kids: 3 });
+    expect(r.json).toMatchObject({ preview: { estimate: { baseRatePerHourUsd: 22, sitters: 1, totalUsd: 88 } } });
+    const s2 = site();
+    const r2 = await previewOnly(s2, makeClient(s2), 'juggle_post_job', { ...args, service: 'homeschool_help', num_kids: 9 });
+    expect(r2.json).toMatchObject({ preview: { estimate: { baseRatePerHourUsd: 18, sitters: 3, totalUsd: 216 } } });
+  });
+
+  it('prices petsitting with one sitter regardless of pet count', async () => {
+    const s = site();
+    const r = await previewOnly(s, makeClient(s), 'juggle_post_job', { ...args, service: 'petsitting', num_pets: 5 });
+    expect(r.json).toMatchObject({ preview: { estimate: { baseRatePerHourUsd: 21, sitters: 1, totalUsd: 84 } } });
+  });
+
   it('an end time at or before 05:00 spans to the next day, as the site form does', async () => {
     const s = site();
     const { sent } = await confirmed(s, makeClient(s), 'juggle_post_job', { ...args, end_time: '01:00' });

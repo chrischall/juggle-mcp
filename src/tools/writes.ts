@@ -31,11 +31,18 @@ function hoursBetween(startDate: string, startTime: string, endDate: string, end
   return ms / 3_600_000;
 }
 
-/** The site's hourly base rate (cents) for this service and head count; `undefined` when not derivable. */
+/** Kid-priced services: babysitting and homeschool help share the kids rates and sitter count (chunk 8383). */
+const isKidService = (service: string) => service === 'babysitting' || service === 'homeschool_help';
+
+/**
+ * The site's hourly base rate (cents) per sitter for this service and head
+ * count; `undefined` when not derivable. Mirrors chunk 8383 `hourlyRate`:
+ * more than 4 kids switches to the per-sitter `multisitter` rate.
+ */
 function baseRateCents(rates: Rec, service: string, numKids: number | null, numPets: number | null): number | undefined {
-  if (service === 'babysitting' && numKids) {
-    const n = Math.min(numKids, 4);
-    return num(rates[`babysitting${n}${n === 1 ? 'Kid' : 'Kids'}`]);
+  if (isKidService(service) && numKids) {
+    if (numKids > 4) return num(rates.multisitter);
+    return num(rates[`babysitting${numKids}${numKids === 1 ? 'Kid' : 'Kids'}`]);
   }
   if (service === 'petsitting' && numPets) {
     const key = numPets >= 4 ? 'petsitting4OrMorePets' : `petsitting${numPets}${numPets === 1 ? 'Pet' : 'Pets'}`;
@@ -164,7 +171,8 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
         };
         const rates = rec(serviceAreaId !== null && rec(form.baseRates)[String(serviceAreaId)] !== undefined ? rec(form.baseRates)[String(serviceAreaId)] : form.baseRates);
         const rate = baseRateCents(rates, args.service, numKids, numPets);
-        const sitters = args.service === 'babysitting' && numKids ? Math.ceil(numKids / 4) : 1;
+        // chunk 8383 `numSitters`: one sitter per 4 kids for kid services, one for pets.
+        const sitters = isKidService(args.service) && numKids ? Math.ceil(numKids / 4) : 1;
         const sitterName = str(form.sitterUserFullName);
         return {
           gate: {
