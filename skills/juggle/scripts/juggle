@@ -93,7 +93,7 @@ do_get() {
   for kv in "$@"; do set -- "$@" --data-urlencode "$kv"; done
   shift "$n"
   if [ "$auth" = 1 ]; then set -- -b "$SESSION" -c "$SESSION" "$@"; fi
-  out=$(curl -sS -G -L --max-redirs 5 --proto "=$PROTO" --proto-redir "=$PROTO" --max-time 30 \
+  out=$(curl -sS -G -L --path-as-is --max-redirs 5 --proto "=$PROTO" --proto-redir "=$PROTO" --max-time 30 \
     -A "$UA" -H 'X-Requested-With: XMLHttpRequest' -H 'Accept: application/json, text/plain, */*' -H 'X-Client: Website' \
     -o "$BODY" -w '%{http_code} %{url_effective}' "$@" "$JUGGLE_BASE_URL$route") ||
     die 2 "could not reach $JUGGLE_BASE_URL"
@@ -395,8 +395,16 @@ cmd_get() {
     /*) ;;
     *) die 1 'route must start with / (e.g. /bookings)' ;;
   esac
+  # Refuse anything curl or the server could normalise into a different path
+  # (dot segments, doubled slashes, percent-encoding, backslashes), so the
+  # path checked below is the path requested; do_get also sends --path-as-is.
   case $route in
-    //* | *..* | *\?* | *#*) die 1 'pass query parameters as key=value arguments, not in the route' ;;
+    *\?* | *#*) die 1 'pass query parameters as key=value arguments, not in the route' ;;
+    *//* | */./* | */. | *..* | *%* | *\\*) die 1 'route must be a plain path: no //, dot segments, % encoding or backslashes' ;;
+    *[!A-Za-z0-9/_.-]*) die 1 'route must be a plain path: letters, digits, /, -, _ and . only' ;;
+  esac
+  # Matched lower-cased, so a case variant cannot slip past either.
+  case $(printf '%s' "$route" | tr '[:upper:]' '[:lower:]') in
     /my-profile | /my-profile/*) die 1 'refused: raw /my-profile has phone numbers and door codes — use: juggle profile' ;;
     /payments | /payments/*) die 1 'refused: raw /payments has a Stripe client secret — use: juggle payments' ;;
     /sitters/[0-9]*) die 1 "refused: a raw sitter page has the sitter's private details — use: juggle sitter <profileId>" ;;

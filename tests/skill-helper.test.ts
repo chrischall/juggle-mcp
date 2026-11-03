@@ -283,6 +283,20 @@ describe.skipIf(!TOOLS_OK || SHELLS.length === 0).each(SHELLS)('skill helper und
     expect(site.requests.some((x) => x.path === '/payments' || x.path === '/my-profile' || x.path === '/sitters/1201')).toBe(false);
   });
 
+  it('get refuses routes that curl or the server would normalise onto a refused page', async () => {
+    await run(['get', '/bookings']);
+    const before = site.requests.length;
+    for (const route of [
+      '/./payments', '/./my-profile', '/./sitters/1201', '/sitters//1201', '/bookings//x', '/%70ayments',
+      '/payments/.', '/bookings/./../payments', '/sitters/%31201', '/sitters\\1201',
+      '/Payments', '/MY-PROFILE', '/payments ', '/payments\t', '/sitters/1201;x',
+    ]) {
+      const x = await run(['get', route]);
+      expect(x.code, route).toBe(1);
+    }
+    expect(site.requests.length).toBe(before);
+  });
+
   it('status and logout', async () => {
     expect(json(await run(['status']))).toEqual({ signedIn: false });
     await run(['login']);

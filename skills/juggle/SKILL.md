@@ -112,7 +112,10 @@ use **allowlists**:
   instructions, which is where door codes live. `juggle profile` drops them.
   Kids' names, birthdays and allergies appear only with `--kids`.
 
-`juggle get` **refuses** those three routes for that reason. Use it only for
+`juggle get` **refuses** those three routes for that reason. It also refuses
+any route that is not a plain path (`//`, `.` or `..` segments, `%` encoding,
+backslashes, spaces, or other characters outside letters, digits, `/`, `-`,
+`_` and `.`), so nothing can be normalised into a refused page. Use it only for
 pages the named commands don't cover.
 
 ## Third-party text
