@@ -1,7 +1,7 @@
 // The confirm-gated writes (owner scope): post a sit, accept / decline an
 // applicant, cancel a booking, send a message, favorite / unfavorite a sitter,
 // leave a review. Every request shape is lifted from the site's own JS bundle
-// (call sites cited per tool). Favorite/unfavorite are verified live (2026-11-03); the rest are UNVERIFIED against a signed-in account
+// (call sites cited per tool). Favorite/unfavorite, post job and cancel are verified live (2026-11-03); the rest are UNVERIFIED against a signed-in account
 // until the live pass — see docs/JUGGLE-API.md §4.
 //
 // Money: nothing here moves money. post_job always sends the bonus / autopay /
@@ -13,6 +13,7 @@ import { IsoDate, IsoTime, McpToolError, defineWrite, registerWrite } from '@chr
 import { z } from 'zod';
 import type { JuggleClient } from '../client.js';
 import { SERVICES } from './bookings.js';
+import { readFavorites } from './sitters.js';
 import { JuggleId, flag, list, num, rec, requireList, str, usd, type Rec } from './shared.js';
 import { sendOnce, writeAnnotations, writeDescription, writeResult } from './write-kit.js';
 
@@ -169,8 +170,8 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
           userId: null,
           id: null,
         };
-        const rates = rec(serviceAreaId !== null && rec(form.baseRates)[String(serviceAreaId)] !== undefined ? rec(form.baseRates)[String(serviceAreaId)] : form.baseRates);
-        const rate = baseRateCents(rates, args.service, numKids, numPets);
+        // Flat cents/hour map (live 2026-11-03; not keyed by service area).
+        const rate = baseRateCents(rec(form.baseRates), args.service, numKids, numPets);
         // chunk 8383 `numSitters`: one sitter per 4 kids for kid services, one for pets.
         const sitters = isKidService(args.service) && numKids ? Math.ceil(numKids / 4) : 1;
         const sitterName = str(form.sitterUserFullName);
@@ -481,9 +482,7 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
           sitter_account_id: JuggleId.describe("The sitter's accountId."),
         }),
         async plan({ sitter_account_id }) {
-          const favorites = requireList((await client.getPage('/sitters', { favorites: 1, numSitters: 200 })).data, 'sitters', '/sitters?favorites=1')
-            .map(rec)
-            .filter((s) => flag(s.isFavorite) !== false);
+          const { favorites } = await readFavorites(client);
           const current = favorites.find((s) => num(s.accountId) === sitter_account_id);
           const sitter = str(current?.name) ?? `sitter account ${sitter_account_id}`;
           const path = `/favorites/${sitter_account_id}`;

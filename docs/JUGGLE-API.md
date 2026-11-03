@@ -72,7 +72,8 @@ Set as axios defaults in chunk 2852:
 
 - Request bodies are JSON (axios with a plain object).
 - Every GET gets a cache-buster query param `timestamp=<ms>` (interceptor);
-  presumably not required.
+  NOT required (VERIFIED live 2026-11-03 — the MCP never sends it). `X-Client:
+  Website` is likewise ignorable; the MCP still sends it to look like the site.
 - `No-Loader: true` header on some calls only suppresses the UI spinner.
 - **Recommendation for the client:** send `X-CSRF-TOKEN` (latest `meta.csrfToken`)
   AND `X-XSRF-TOKEN` (decoded cookie) on writes, plus `X-Requested-With`,
@@ -83,8 +84,12 @@ The SPA has **no global 401/419 interceptor** (full page loads mean the server
 just redirects). Signals, from the bundle + Laravel convention:
 - **401 / 419** — the upload helper (chunks 260, 7177, 8628, …) maps both to
   "Your session expired … Sign in again". 419 = CSRF/session mismatch.
-- **302 → `/log-in`** for page routes when signed out (seen anonymously for HTML;
-  XHR behaviour UNVERIFIED — may be 401 JSON or a redirect).
+- **200 `{redirect: true, url: "/log-in", screen: "LogIn", data: []}`** — what a
+  page route answers an XHR with when signed out or holding a stale session
+  cookie (VERIFIED live 2026-11-03, `/bookings` and `/notifications`). Not a
+  page envelope (no `meta`), so it must be matched on its own: `looksExpired`
+  checks `redirect === true` and the target path, never prose.
+- **302 → `/log-in`** for page routes when signed out (seen anonymously for HTML).
 - **200 with `meta.page === "LogIn"`** (if the redirect is followed).
 - **200 HTML** (login page) where JSON was expected.
 - `/web-api/conversations` signed out → **401 JSON** (seen live).
@@ -195,14 +200,23 @@ and `profile` (snake_case: `id` (= profileId), `rating`, `certifications`,
 - `canSendMsg` false ⇒ messaging is gated behind a subscription (UI shows a
   subscription prompt). Same for "Invite Sitter to Apply".
 
-### 3.7 Sitter schedule — `GET /sitters/{profileId}/schedule` → `SitterSchedule` (chunk 8582, module 1296) — UNVERIFIED
+### 3.7 Sitter schedule — `GET /sitters/{profileId}/schedule` → `SitterSchedule` (chunk 8582, module 1296) — page + `go-to-week` VERIFIED live 2026-11-03
 `data`: `id`, `sitterName`, `dotws`, `hours`, `dotwHours` (7×24 matrix of
 date-hour keys), `selectedDateHours[]` (available), `bookedDateHours[]`,
-`isThisWeek`, `previousWeekDate`, `nextWeekDate`.
+`isThisWeek`, `previousWeekDate`, `nextWeekDate`. Live adds `isActive`;
+`dotws[]` items are `{dotw, date, dateUnformatted}`, `hours[]` numbers,
+`dotwHours` an array of string arrays; `id` is a string. No tool reads it yet.
 Other weeks: `GET /sitters/{id}/schedule/go-to-week?date=YYYY-MM-DD` → returns
-the availability object **directly** (not wrapped in `{meta,user,data}`).
+the availability object **directly** (not wrapped in `{meta,user,data}`) —
+VERIFIED live: the page `data` keys minus `id` / `sitterName`; any date works,
+not only `previousWeekDate` / `nextWeekDate`.
 
-### 3.8 Favorites — `GET /sitters?favorites=1` (FindASitter with `filters.favorites`) — VERIFIED live 2026-11-03; there is no `GET /favorites` (404)
+### 3.8 Favorites — derived from `GET /sitters` — VERIFIED live 2026-11-03; there is no `GET /favorites` (404)
+**`favorites=1` is echoed (`filters.favorites: "1"`) but does NOT filter**: the
+page still returns up to 200 sitters (the cap holds even for `numSitters=1000`;
+`data.totalNumSitters` gives the full count), with favorites sorted FIRST —
+with or without the param. The tools therefore keep only `isFavorite` rows,
+which is complete for a family with fewer than 200 favorites.
 There is no favorites page/component in the bundle. Favourite status is an
 `isFavorite` flag on sitter list items (3.5), sitter profiles (3.6) and booking
 sitters/requests (3.4). `juggle_list_favorites` must therefore be derived:
@@ -255,11 +269,11 @@ JSON helpers (reads):
 - `GET /payments/export-transactions-to-csv` (CSV download link)
 **Never surface `intent`/`publishableKey`/client secrets.**
 
-### 3.13 Notifications — `GET /notifications` → `Notifications` (chunk 6128) — UNVERIFIED (path guessed)
+### 3.13 Notifications — `GET /notifications` → `Notifications` (chunk 6128) — path VERIFIED live 2026-11-03 (`data.notifications[]`; item keys unchecked — the list was empty)
 `data.notifications[]`: `id, body, createdAt ("MM/DD/YYYY …"), url`. Past two
 months only.
 
-### 3.14 Post-a-job form data — `GET /bookings/create[/{sitterAccountId}]` → `PostAJob` (chunk 8383, form module 6364) — UNVERIFIED (base path inferred)
+### 3.14 Post-a-job form data — `GET /bookings/create[/{sitterAccountId}]` → `PostAJob` (chunk 8383, form module 6364) — base path + shape VERIFIED live 2026-11-03 (`/{sitterAccountId}` variant unchecked)
 `data`: `isActive`, `serviceAreaId`, `numKids`, `numPets`, `addr` (default),
 `hasSubscription`, `org`, `availablePromoCodesMap`, `sitterAccountId`,
 `sitterUserFullName`, `sittingDateTimes` (`date|start|end`), `baseRates`,
@@ -271,6 +285,11 @@ months only.
 `petsitting4OrMorePets`. Services: `babysitting`, `petsitting`,
 `homeschool_help`. Needed by `juggle_post_job` to resolve `addr` ids/service ids
 and preview the fee.
+Live (family account): `baseRates` is FLAT (not keyed by service area) and also
+carries `bookingFee` + `jugglePerHourAmt`; there is **no `serviceAreaId`** in
+`data` (so a family create sends `serviceAreaId: null`); `lists` has no
+`bookingStatuses`; `postOnOpenJobs` and `reoccurringBookingOneSitterOnly`
+defaults are numbers (0/1).
 Helper: `GET /bookings/create/check-sitter-availability?sitterAccountId=&startDate=&startTime=&endDate=&endTime=` → `{sitterIsAvailable}`.
 
 ### 3.15 Locations (public, no auth) — `GET /locations` → `Locations` (chunk 1503) — shape seen live anonymously
@@ -288,7 +307,7 @@ accept-job/decline-job (sitter), admin routes, group-admin routes,
 
 ## 4. Writes
 
-Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **Favorite / unfavorite: VERIFIED live 2026-11-03** (owner-approved: favorite → unfavorite → favorite on 4 booked sitters, re-read after each step, all ended favorited). Every other write is still UNVERIFIED live — its shape comes from the bundle's call sites.
+Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **Favorite / unfavorite: VERIFIED live 2026-11-03** (owner-approved: favorite → unfavorite → favorite on 4 booked sitters, re-read after each step, all ended favorited). **Post job + cancel: VERIFIED live 2026-11-03** (owner-approved throwaway sit, not on Open Jobs, no invite, cancelled at once with no penalty — see the log). Accept / decline, send message and leave review are still UNVERIFIED live — its shape comes from the bundle's call sites.
 
 All carry the §2 headers; JSON bodies. Responses commonly use
 `{error: true, msg}` **with HTTP 200** for business failures — a 200 is not
@@ -296,10 +315,10 @@ success until `error` is checked.
 
 | Tool | Method + path | Body (from call site) | Response (bundle) | Chunk |
 |---|---|---|---|---|
-| `juggle_post_job` | `POST /bookings` | see below | `{error, msg}`; success → no id returned (UI just shows success) | 8383 / 6364 |
+| `juggle_post_job` | `POST /bookings` | see below | live: **200 `{success: true}`, no id** — the tool finds the new booking in `GET /bookings` (worked live) | 8383 / 6364 |
 | `juggle_accept_sitter` | `PATCH /bookings/{bookingId}/accept-sitter/{sitterAccountId}` | `{forAll?: bool}` (true = all open jobs in a reoccurring series) | `{error?, msg?, status, displayStatus, numBookedSitters, bookingSitters, bookingRequests}` | 6891 |
 | `juggle_decline_sitter` | `PATCH /bookings/{bookingId}/decline-sitter/{sitterAccountId}` | `{forAll?: bool}` | `{bookingSitters, bookingRequests}` | 6891 |
-| `juggle_cancel_booking` | `PATCH /bookings/{bookingId}/cancel` | `{requireCancellationPenalty, cancellationReason, otherCancellationReason, cancellationPenalty}` | `{error, msg}` / `{confirmationRequired, paymentIntent, cancellationFee, bookingSitterFees, …}` / `{redirectToBookings}` | 1256 |
+| `juggle_cancel_booking` | `PATCH /bookings/{bookingId}/cancel` | `{requireCancellationPenalty, cancellationReason, otherCancellationReason, cancellationPenalty}` | live (no penalty): **200 with an EMPTY body** → reported `canceled: true`, booking then `canceled`. Bundle: `{error, msg}` / `{confirmationRequired, …}` / `{redirectToBookings}` | 1256 |
 | `juggle_send_message` | `POST /messages` | `{conversationId, type: "text", content}` | `{error?, msg?, messages: [...]}` (full refreshed thread) | 8628 |
 | `juggle_favorite_sitter` | `POST /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
 | `juggle_unfavorite_sitter` | `DELETE /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
@@ -388,35 +407,51 @@ Stripe links.
 Use the owner's family account; record status + body SHAPE only (never values)
 into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 
-- [ ] `POST /log-in` success shape: status, `{error:false?, redirectUrl}`, which cookies rotate.
-- [ ] Whether the pre-login `X-CSRF-TOKEN` still works after login, or a fresh `meta.csrfToken` / `X-XSRF-TOKEN` is required (try a harmless write-free check: a GET is CSRF-exempt, so test on the first real write).
-- [ ] Signed-out XHR to a page route (e.g. `/bookings`): 302 to `/log-in`? 401 JSON? 200 `meta.page:"LogIn"`? → finalises `isExpired`.
-- [ ] Stale session cookie on a write: 419? 401? → finalises replay rule.
-- [ ] `GET /` (XHR) → `meta.page === "HomeFamily"`, `user.type === "family"`, `user.accountId` present.
-- [ ] `GET /my-profile` data keys (§3.2) and item keys of `addrs/kids/pets`.
-- [ ] `GET /bookings` item keys (§3.3); full status vocabulary.
-- [ ] `GET /bookings/{id}` keys incl. `bookingSitters[]` / `bookingRequests[]` item keys.
-- [ ] `GET /sitters` with and without filters; `numSitters` honoured; array params encoding (`services[]=` vs `services=`).
-- [ ] Any favourites filter on `/sitters` (try `favorites=1`), else confirm the isFavorite-scan approach.
-- [ ] `GET /sitters/{profileId}` keys; confirm profileId vs accountId vs userId mapping.
-- [ ] `GET /sitters/{profileId}/schedule` + `go-to-week` shape.
-- [ ] `GET /reviews/{accountId}` item keys.
-- [ ] `GET /messages` and `GET /web-api/conversations` item keys; actual `conversation.url` pattern.
+- [x] `POST /log-in` success shape: status, `{error:false?, redirectUrl}`, which cookies rotate.
+- [x] Whether the pre-login `X-CSRF-TOKEN` still works after login, or a fresh `meta.csrfToken` / `X-XSRF-TOKEN` is required (try a harmless write-free check: a GET is CSRF-exempt, so test on the first real write). **Answer: `meta.csrfToken` does NOT change on login, the pre-login token works for a write, and `X-XSRF-TOKEN` alone also works.** `XSRF-TOKEN` + `whyjuggle_session` cookies do rotate.
+- [x] Signed-out XHR to a page route (e.g. `/bookings`): 302 to `/log-in`? 401 JSON? 200 `meta.page:"LogIn"`? → finalises `isExpired`. **Answer: 200 `{redirect:true,url:"/log-in",screen:"LogIn"}`** — same for a stale cookie (§2 session expiry).
+- [x] Stale session cookie on a write: 419? 401? → finalises replay rule. **Answer: 419 `{"message":"CSRF token mismatch."}`** for an unknown, missing or logged-out session cookie — the client's 419 → one re-login + replay rule holds.
+- [x] `GET /` (XHR) → `meta.page === "HomeFamily"`, `user.type === "family"`, `user.accountId` present.
+- [x] `GET /my-profile` data keys (§3.2) and item keys of `addrs/kids/pets`.
+- [x] `GET /bookings` item keys (§3.3); full status vocabulary.
+- [x] `GET /bookings/{id}` keys incl. `bookingSitters[]` / `bookingRequests[]` item keys.
+- [x] `GET /sitters` with and without filters; `numSitters` honoured; array params encoding (`services[]=` vs `services=`).
+- [x] Any favourites filter on `/sitters` (try `favorites=1`), else confirm the isFavorite-scan approach.
+- [x] `GET /sitters/{profileId}` keys; confirm profileId vs accountId vs userId mapping.
+- [x] `GET /sitters/{profileId}/schedule` + `go-to-week` shape (§3.7).
+- [x] `GET /reviews/{accountId}` item keys.
+- [x] `GET /messages` and `GET /web-api/conversations` item keys; actual `conversation.url` pattern.
 - [ ] Does `GET /messages/users/{userId}` create a conversation as a side effect?
-- [ ] Conversation page keys (`conversationId`, `messages[]`, `isActive`).
-- [ ] `GET /payments` keys + the three JSON helpers; confirm nothing secret leaks into the projection.
-- [ ] `GET /notifications` path + shape.
-- [ ] `GET /bookings/create` path (+ `/{sitterAccountId}`) and `lists.*` option shapes, `baseRates` keyed or flat.
-- [ ] `GET /bookings/{id}/cancel` and `GET /reviews/create/{bookingId}/{accountId}` shapes.
+- [x] Conversation page keys (`conversationId`, `messages[]`, `isActive`).
+- [x] `GET /payments` keys + the three JSON helpers; confirm nothing secret leaks into the projection.
+- [x] `GET /notifications` path (§3.13) — `data.notifications[]`; item keys unchecked (empty list).
+- [x] `GET /bookings/create` path (+ `/{sitterAccountId}`) and `lists.*` option shapes, `baseRates` keyed or flat. **Flat; no `serviceAreaId`** (§3.14). The `/{sitterAccountId}` variant is still unchecked.
+- [x] `GET /bookings/{id}/cancel` (its reason list drove a live cancel) — [ ] and `GET /reviews/create/{bookingId}/{accountId}` shapes.
 - [ ] Writes — only with the owner's explicit go-ahead per call, on throwaway data: `POST /bookings` (then cancel it), favorite/unfavorite round-trip, send a message to a known contact, accept/decline on a real application, leave a review on a completed booking. Record the success body for each (does `POST /bookings` return an id?).
 - [ ] Whether a 2xx with `{error:true}` vs a 4xx/422 is used for validation failures on each write.
-- [ ] `X-Client: Website` and `timestamp` param — required or ignorable?
+- [x] `X-Client: Website` and `timestamp` param — required or ignorable? **Both ignorable**: reads and a write without `X-Client` behave identically; the client never sends `timestamp` (accepted when sent).
 
 ## Live verification log (2026-11-03)
 - Login: `POST /log-in` → `{"success":true,"redirectUrl":…}` on success, `{"error":true}` on failure (both 200).
-- All 12 read tools ran against a real family account through the built server (none of them reads the sitter schedule,
-  §3.7, which therefore stays UNVERIFIED; §3.13 notifications and §3.14 post-a-job form data likewise); the sitter tool returns no private
+- All 12 read tools ran against a real family account through the built server (none of them reads the sitter schedule
+  §3.7, notifications §3.13 or the post-a-job form §3.14 — those pages were checked directly in a later pass); the sitter tool returns no private
   fields on any view, payments never return the Stripe SetupIntent / keys, and kids' details are absent by default.
 - `/web-api/conversations` answers 401 even signed in (the mobile app's token API); messages use `/messages` instead.
-- Writes: favorite / unfavorite verified (above). Post job, accept / decline sitter, cancel, send message and leave review
+- Signed-out / stale-cookie XHR → HTTP 200 `{redirect:true,url:"/log-in",screen:"LogIn",data:[]}`. `looksExpired`
+  did not recognise it (it only knew `meta.page === "LogIn"`), so an expired session surfaced as an error instead of
+  the one re-login + replay; fixed.
+- `GET /bookings/create` (PostAJob) shape checked (§3.14); `juggle_post_job`'s preview built correctly from it (not sent).
+- Post job → cancel (owner-approved, one throwaway sit 2027-01-14, `postOnOpenJobs:false`, no invite): `POST /bookings`
+  → 200 `{"success":true}` (no id; the `/bookings` lookup identified it, status `open`); `GET /bookings/{id}/cancel`
+  listed 7 reasons; `PATCH /bookings/{id}/cancel` with no penalty → 200, empty body; booking then `canceled`.
+  Login + `GET /` token refresh, then the writes, used the post-login CSRF token — whether the PRE-login token
+  would also work was checked next (below).
+- CSRF / stale session (favorite toggle only, restored): `meta.csrfToken` is unchanged by login; a write with the
+  pre-login `X-CSRF-TOKEN` alone succeeds, as does one with `X-XSRF-TOKEN` alone. A write with an unknown, missing or
+  logged-out session cookie → **419 `{"message":"CSRF token mismatch."}`**; a read with one → the 200 redirect
+  envelope (§2). `GET /log-out` as XHR answers `{redirect:true,url:"/",screen:"HomeNoUser"}` but did not end the
+  session; the plain (non-XHR) `GET /log-out` → 302 `/` does.
+- `/sitters?favorites=1` does not filter (see §3.8).
+- `go-to-week` shape checked (§3.7); `X-Client` and `timestamp` are both ignorable (§2).
+- Writes: favorite / unfavorite verified (above). Accept / decline sitter, send message and leave review
   reach other people and were deliberately NOT exercised; their request shapes are bundle-derived.

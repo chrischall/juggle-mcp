@@ -132,7 +132,7 @@ export class FakeSite {
     }
     const handler = this.routes.get(`${req.method} ${req.path}`);
     if (req.path === '/' && req.method === 'GET' && !handler) {
-      if (!this.signedIn(req)) return { status: 302, headers: { location: `${BASE}/log-in` } };
+      if (!this.signedIn(req)) return SIGNED_OUT_XHR;
       return { body: page('HomeFamily', { alerts: [] }) };
     }
     if (!handler) return { status: 404, body: { message: 'Not Found' } };
@@ -140,10 +140,13 @@ export class FakeSite {
   }
 }
 
-/** Route helper: an authed XHR page; signed-out requests bounce to /log-in. */
+/** What whyjuggle.com answers a signed-out / stale-cookie XHR page read with (live 2026-11-03). */
+export const SIGNED_OUT_XHR = { body: { redirect: true, url: '/log-in', screen: 'LogIn', data: [] } };
+
+/** Route helper: an authed XHR page; signed-out requests get the site's redirect envelope. */
 export function authedPage(envelope: object | ((req: Recorded) => object)): Handler {
   return (req, site) => {
-    if (!site.signedIn(req)) return { status: 302, headers: { location: '/log-in' } };
+    if (!site.signedIn(req)) return SIGNED_OUT_XHR;
     return { body: typeof envelope === 'function' ? envelope(req) : envelope };
   };
 }
