@@ -1,7 +1,8 @@
 # Juggle (whyjuggle.com) — family-side API map
 
 **Status: every endpoint, header and field below is DERIVED FROM THE SHIPPED JS
-BUNDLE (deployedVersion v1.8.56, captured 2026-11-03) and is UNVERIFIED against
+BUNDLE (deployedVersion v1.8.56, captured 2026-11-03); the sections marked VERIFIED were since checked against a real
+family account (2026-11-03, read-only, structure only). Anything still marked UNVERIFIED is unchecked against
 a signed-in account.** Nothing here has been called with real credentials. The
 "Live verification checklist" at the end is the work list for the first
 authenticated pass; until a row is ticked there, treat it as a hypothesis.
@@ -95,10 +96,10 @@ Log out: `GET /log-out` (link in header).
 All page routes are fetched with the XHR headers → `{meta, user, data}`.
 `meta.page` is the Vue component name listed.
 
-### 3.1 Home — `GET /` → `HomeFamily` (chunk 260) — UNVERIFIED
+### 3.1 Home — `GET /` → `HomeFamily` (chunk 260) — VERIFIED live 2026-11-03
 `data`: `hasProfilePhoto`, `alerts[]`, `announcements[]`.
 
-### 3.2 My profile — `GET /my-profile` → `MyProfileFamily` (chunk 7177, form module 9323) — UNVERIFIED
+### 3.2 My profile — `GET /my-profile` → `MyProfileFamily` (chunk 7177, form module 9323) — VERIFIED live 2026-11-03
 `data`: `id`, `firstName`, `lastName`, `email`, `serviceAreaId`,
 `profilePicImgUrl`, `referralCode`, `notes`, `isActive`, `hasSubscription`,
 `addrs[]`, `kids[]`, `pets[]`, `friends[]` (`id, name, url, displayStatus`),
@@ -115,7 +116,7 @@ specialInstructions`.
 **Contains PII (address, phone, emergency contact) — compact view should omit.**
 (`friends` = other FAMILIES the user is friends with, not favourite sitters.)
 
-### 3.3 Bookings list — `GET /bookings` → `Bookings` (chunk 8288) — UNVERIFIED
+### 3.3 Bookings list — `GET /bookings` → `Bookings` (chunk 8288) — VERIFIED live 2026-11-03
 `data`: `bookings[]`, `bookingStatuses` (options), `bookingStatusesMap`
 (status → label), `bookingStatusColorsMap`, `bookingSorts`, `bookingSortsMap`,
 `otherUserType` (`"Sitter"`/`"Family"`).
@@ -131,7 +132,7 @@ values: `open`, `booked`, `in_progress`, `awaiting_confirmation`,
 active ones). → `juggle_list_bookings` can offer upcoming/active vs past by
 status.
 
-### 3.4 Booking detail — `GET /bookings/{bookingId}` → `BookingDetails` (chunk 6891) — UNVERIFIED
+### 3.4 Booking detail — `GET /bookings/{bookingId}` → `BookingDetails` (chunk 6891) — VERIFIED live 2026-11-03
 `data` (all read by the component): `bookingId`, `status`, `displayStatus`,
 `serviceType`, `typeOfJob`, `startDate`, `startTime`, `endDate`, `endTime`,
 `bookingDotw`, `flexibleEndDatetime`, `isReoccurring`, `reoccurringDotws`,
@@ -167,7 +168,7 @@ or canceled"), `recommendedRequests` (options for request-sitter),
 - Notes `specialInstructions`, `kidInfo`, `petInfo` are family-authored;
   sitter names/bios are third-party → untrusted.
 
-### 3.5 Find sitters — `GET /sitters?…` → `FindASitter` (chunk 3902) — UNVERIFIED
+### 3.5 Find sitters — `GET /sitters?…` → `FindASitter` (chunk 3902) — VERIFIED live 2026-11-03
 Query params (all optional): `sittingDate` (YYYY-MM-DD), `sittingStartTime`,
 `sittingEndTime` (HH:MM), `services[]`, `availableLongTermAsANannyValues[]`,
 `infantCapableValues[]`, `keywords`, `certifications`, `name`, `numSitters`
@@ -179,7 +180,7 @@ Sitter item: `id`, `url` (→ `/sitters/{profileId}`), `imgUrl`, `banner`,
 `backgroundCheckCompleted`.
 Profile links get `?sittingDateTimes=<date>|<start>|<end>` when filtered by date.
 
-### 3.6 Sitter profile — `GET /sitters/{profileId}` → `SitterDetails` (chunk 7250) — UNVERIFIED
+### 3.6 Sitter profile — `GET /sitters/{profileId}` → `SitterDetails` (chunk 7250) — VERIFIED live 2026-11-03
 `data`: `accountId`, `userId`, `name`, `profilePicImgUrl`, `serviceAreaName`,
 `momApprovedSince`, `numJobsCompleted`, `friendsThatHaveBooked[]` (`id, url,
 imgUrl`), `hasCompletedBookings`, `isFavorite`, `backgroundCheckCompleted`,
@@ -201,7 +202,7 @@ date-hour keys), `selectedDateHours[]` (available), `bookedDateHours[]`,
 Other weeks: `GET /sitters/{id}/schedule/go-to-week?date=YYYY-MM-DD` → returns
 the availability object **directly** (not wrapped in `{meta,user,data}`).
 
-### 3.8 Favorites — NO dedicated read endpoint found — UNVERIFIED
+### 3.8 Favorites — `GET /sitters?favorites=1` (FindASitter with `filters.favorites`) — VERIFIED live 2026-11-03; there is no `GET /favorites` (404)
 There is no favorites page/component in the bundle. Favourite status is an
 `isFavorite` flag on sitter list items (3.5), sitter profiles (3.6) and booking
 sitters/requests (3.4). `juggle_list_favorites` must therefore be derived:
@@ -209,11 +210,11 @@ sitters/requests (3.4). `juggle_list_favorites` must therefore be derived:
 service-area sitter list), or a server-side filter discovered live.
 (`recommendedRequests` on a booking "includes your favorites" — another hint.)
 
-### 3.9 Reviews — `GET /reviews/{accountId}` → `Reviews` (chunk 1304) — UNVERIFIED
+### 3.9 Reviews — `GET /reviews/{accountId}` → `Reviews` (chunk 1304) — VERIFIED live 2026-11-03
 `data`: `reviewedName`, `reviews[]` (`id, date, name, rating, content, friend
 (bool), imgUrl`). `content` is third-party text → untrusted.
 
-### 3.10 Messages list — `GET /messages` → `Messages` (chunk 3583) — UNVERIFIED
+### 3.10 Messages list — `GET /messages` → `Messages` (chunk 3583) — VERIFIED live 2026-11-03
 `data.conversations[]`: `id`, `url` (server-built link to the conversation),
 `name`, `imgUrl`, `lastMessage`, `numUnreadMsgs`, `messageCreatedAt`,
 `conversationCreatedAt`, `is_archived`. The SPA polls this every 15 s.
@@ -225,7 +226,7 @@ Signed out → 401 JSON (seen live). Archive toggles:
 `POST /web-api/conversations/{id}/archive` / `/unarchive` (body `{}`) — not in
 the write scope. **No `/expand` endpoint exists in the bundle.**
 
-### 3.11 Conversation — `GET <conversation.url>` or `GET /messages/users/{userId}` → `Conversation` (chunk 8628) — UNVERIFIED
+### 3.11 Conversation — `GET <conversation.url>` or `GET /messages/users/{userId}` → `Conversation` (chunk 8628) — VERIFIED live 2026-11-03
 `/messages/users/{userId}` is the "Send a Message" link from sitter profiles and
 bookings — expected to open (or create) the 1:1 conversation. Exact
 `conversation.url` pattern unknown (likely `/messages/{conversationId}`).
@@ -235,7 +236,7 @@ post), `messages[]` (`id, name, imgUrl, sentAt, myMessage (bool), type
 ⚠ Opening `/messages/users/{userId}` may itself create a conversation — check
 live before using it in a read tool.
 
-### 3.12 Payments — `GET /payments` → `PaymentsFamily` (chunk 3235) — UNVERIFIED
+### 3.12 Payments — `GET /payments` → `PaymentsFamily` (chunk 3235) — VERIFIED live 2026-11-03
 `data`: `serviceAreaName`, `baseRates`, `surgePrices`, `paymentMethods[]`
 (`id, card{brand,last4,exp_month,exp_year}`), `defaultPaymentMethodId`,
 `hasSubscription`, `subscription` (`id, planId (1 monthly, 2 yearly), type,
@@ -287,7 +288,7 @@ accept-job/decline-job (sitter), admin routes, group-admin routes,
 
 ## 4. Writes
 
-Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **All UNVERIFIED until the live write pass below.**
+Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **Favorite / unfavorite: VERIFIED live 2026-11-03** (owner-approved: favorite → unfavorite → favorite on 4 booked sitters, re-read after each step, all ended favorited). Every other write is still UNVERIFIED live — its shape comes from the bundle's call sites.
 
 All carry the §2 headers; JSON bodies. Responses commonly use
 `{error: true, msg}` **with HTTP 200** for business failures — a 200 is not
@@ -410,3 +411,11 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 - [ ] Writes — only with the owner's explicit go-ahead per call, on throwaway data: `POST /bookings` (then cancel it), favorite/unfavorite round-trip, send a message to a known contact, accept/decline on a real application, leave a review on a completed booking. Record the success body for each (does `POST /bookings` return an id?).
 - [ ] Whether a 2xx with `{error:true}` vs a 4xx/422 is used for validation failures on each write.
 - [ ] `X-Client: Website` and `timestamp` param — required or ignorable?
+
+## Live verification log (2026-11-03)
+- Login: `POST /log-in` → `{"success":true,"redirectUrl":…}` on success, `{"error":true}` on failure (both 200).
+- All 12 read tools ran against a real family account through the built server; the sitter tool returns no private
+  fields on any view, payments never return the Stripe SetupIntent / keys, and kids' details are absent by default.
+- `/web-api/conversations` answers 401 even signed in (the mobile app's token API); messages use `/messages` instead.
+- Writes: favorite / unfavorite verified (above). Post job, accept / decline sitter, cancel, send message and leave review
+  reach other people and were deliberately NOT exercised; their request shapes are bundle-derived.
