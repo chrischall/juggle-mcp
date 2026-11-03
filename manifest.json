@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "juggle-mcp",
   "display_name": "Juggle",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Juggle (whyjuggle.com) babysitting and petsitting for Claude — your family account's sits, sitters and messages via natural language",
   "author": {
     "name": "Chris Hall",

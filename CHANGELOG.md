@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1](https://github.com/chrischall/juggle-mcp/compare/v0.1.0...v0.1.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* recover from expired Juggle sessions and correct the favorites list ([#5](https://github.com/chrischall/juggle-mcp/issues/5)) ([2ca1f88](https://github.com/chrischall/juggle-mcp/commit/2ca1f8807abb9ce61b876ce3a2f6b863dc110f60))
+
+
+### Documentation
+
+* note that juggle_list_favorites no longer reports totalNumSitters ([#8](https://github.com/chrischall/juggle-mcp/issues/8)) ([3fc4b62](https://github.com/chrischall/juggle-mcp/commit/3fc4b623df6470c5bdc57c00a51eeb48435ce892))
+
 ## 0.1.0 (2026-11-03)
 
 
