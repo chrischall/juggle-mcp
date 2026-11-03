@@ -1,0 +1,83 @@
+# How this MCP wants to be hosted on mcp-host (docs/MINT-MANIFEST.md there).
+# A PROPOSAL, read at the pinned source and shown to an owner in the register
+# wizard — it applies nothing on its own and carries no secret value.
+version: 1
+name: Juggle
+slug: juggle
+summary: >-
+  Juggle (whyjuggle.com) babysitting and petsitting for families — your sits
+  and their applicants, sitter profiles and reviews, messages, and
+  confirm-gated booking changes. Uses your own Juggle sign-in.
+
+# Sample prompts for the public catalog. Read-only on purpose.
+examples:
+  - prompt: Which of my upcoming Juggle sits still have sitter applications waiting for me?
+    note: Lists bookings and their pending applications.
+  - prompt: Show me the reviews for the sitter who applied to Friday's sit.
+    note: Reads the sitter's profile and reviews.
+  - prompt: Did any sitter message me on Juggle today?
+    note: Lists conversations with unread counts.
+
+identity:
+  # One child per caller: the child signs in to Juggle AS the caller, so two
+  # people sharing one child would share one signed-in family account.
+  # Required for `auth` below.
+  perUserChild: true
+
+auth:
+  # Collected once on the connector's authorize page. No `flow`: Juggle's
+  # email/password sign-in is a single POST /log-in (no captcha, no MFA, no
+  # second exchange — docs/JUGGLE-API.md §2). The child keeps the resulting
+  # cookie session in memory and signs in again on expiry, so there is
+  # nothing to `capture`.
+  fields:
+    - name: JUGGLE_EMAIL
+      label: Juggle email
+      type: text
+      required: true
+      help: The email address you sign in to whyjuggle.com with (a family account).
+    - name: JUGGLE_PASSWORD
+      label: Juggle password
+      type: password
+      required: true
+      help: >-
+        Your whyjuggle.com password. Stored as a per-user secret and never shown
+        again. A rejected password is never retried automatically — reconnect
+        with the right one. Google/Facebook-only sign-ins are not supported:
+        set a password on whyjuggle.com first.
+
+env:
+  # JUGGLE_EMAIL / JUGGLE_PASSWORD are deliberately NOT here: they are
+  # collected per user above, and an auth field may not name a host-set
+  # variable. Set them in .env only for a local, single-user install.
+  # JUGGLE_BASE_URL is also omitted: it exists only to point the test suite at
+  # a stub server, and a hosted child must talk to whyjuggle.com.
+  - name: MCP_CONFIRM_MODE
+    required: false
+    help: >-
+      What a confirm-gated write (post a sit, accept or decline a sitter,
+      cancel a booking, send a message, favorite, leave a review) does on a
+      client that cannot show a prompt, like claude.ai. "ask-user" (default):
+      the first call sends nothing and returns a preview plus a confirmToken,
+      and the model must get your approval in chat before calling again with
+      it. "auto": the model may use the token after reviewing the preview
+      itself. "refuse": such writes are refused.
+  - name: MCP_CONFIRM_ELICITATION
+    required: false
+    help: >-
+      "off" never shows a confirmation prompt, so every client gets the
+      MCP_CONFIRM_MODE path. Default "on".
+  - name: MCP_CONFIRM_TTL_SECONDS
+    required: false
+    help: How long a write's confirmToken stays valid, in seconds (default 600).
+
+# No `state` block: nothing needs to persist. The cookie session lives in
+# memory and a cold start costs one sign-in.
+
+egress:
+  allow:
+    # The only host the server fetches (src/config.ts DEFAULT_BASE_URL): the
+    # sign-in, every page read and every write. The anonymous probes in
+    # docs/JUGGLE-API.md were answered on the apex; the client follows only
+    # same-origin redirects, and there is no CDN fetch or browser bridge.
+    - whyjuggle.com

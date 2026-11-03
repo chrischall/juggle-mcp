@@ -1,0 +1,35 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "juggle-mcp",
+  "owner": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com"
+  },
+  "metadata": {
+    "description": "MCP server for Juggle (whyjuggle.com) — natural-language access to your family account's sits, sitters and messages",
+    "version": "0.0.0"
+  },
+  "plugins": [
+    {
+      "name": "juggle-mcp",
+      "displayName": "Juggle",
+      "source": "./",
+      "description": "MCP server for Juggle (whyjuggle.com) — browse your sits and sitters, read messages, and post or manage sits via natural language",
+      "version": "0.0.0",
+      "author": {
+        "name": "Chris Hall"
+      },
+      "homepage": "https://github.com/chrischall/juggle-mcp",
+      "repository": "https://github.com/chrischall/juggle-mcp",
+      "license": "MIT",
+      "keywords": [
+        "juggle",
+        "babysitting",
+        "petsitting",
+        "mcp",
+        "parent"
+      ],
+      "category": "productivity"
+    }
+  ]
+}

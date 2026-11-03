@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "juggle": {
+      "command": "npx",
+      "args": ["-y", "@chrischall/juggle-mcp"],
+      "env": {
+        "JUGGLE_EMAIL": "${JUGGLE_EMAIL}",
+        "JUGGLE_PASSWORD": "${JUGGLE_PASSWORD}"
+      }
+    }
+  }
+}

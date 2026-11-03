@@ -1,0 +1,60 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chrischall/juggle-mcp",
+  "description": "Juggle (whyjuggle.com) babysitting/petsitting for families: sits, sitters, messages (AI-built).",
+  "repository": {
+    "url": "https://github.com/chrischall/juggle-mcp",
+    "source": "github"
+  },
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@chrischall/juggle-mcp",
+      "version": "0.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "JUGGLE_EMAIL",
+          "description": "The email address you sign in to whyjuggle.com with (a family account).",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "JUGGLE_PASSWORD",
+          "description": "Your whyjuggle.com password. Google/Facebook-only sign-ins are not supported.",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "JUGGLE_BASE_URL",
+          "description": "Site origin override, for tests or a local stub only. Defaults to https://whyjuggle.com; must be https (loopback http allowed).",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "MCP_CONFIRM_MODE",
+          "description": "Confirm-gated writes on clients without prompts: ask-user (default), auto, or refuse.",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "MCP_CONFIRM_ELICITATION",
+          "description": "Set to off to skip the confirmation prompt even on clients that declare elicitation support.",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "MCP_CONFIRM_TTL_SECONDS",
+          "description": "How long a write's confirmToken stays valid, in seconds (default 600).",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

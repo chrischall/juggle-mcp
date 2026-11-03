@@ -1,0 +1,22 @@
+{
+  "name": "juggle-mcp",
+  "displayName": "Juggle",
+  "version": "0.0.0",
+  "description": "MCP server for Juggle (whyjuggle.com) — natural-language access to your family account's sits, sitters and messages",
+  "author": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com"
+  },
+  "homepage": "https://github.com/chrischall/juggle-mcp",
+  "repository": "https://github.com/chrischall/juggle-mcp",
+  "license": "MIT",
+  "keywords": [
+    "juggle",
+    "babysitting",
+    "petsitting",
+    "mcp",
+    "parent"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

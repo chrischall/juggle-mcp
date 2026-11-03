@@ -1,0 +1,82 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/dxt/main/dist/mcpb-manifest.schema.json",
+  "manifest_version": "0.3",
+  "name": "juggle-mcp",
+  "display_name": "Juggle",
+  "version": "0.0.0",
+  "description": "Juggle (whyjuggle.com) babysitting and petsitting for Claude — your family account's sits, sitters and messages via natural language",
+  "author": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com",
+    "url": "https://github.com/chrischall"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrischall/juggle-mcp"
+  },
+  "homepage": "https://github.com/chrischall/juggle-mcp",
+  "support": "https://github.com/chrischall/juggle-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "juggle",
+    "whyjuggle",
+    "babysitting",
+    "petsitting",
+    "childcare",
+    "parent"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/bundle.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/bundle.js"
+      ],
+      "env": {
+        "JUGGLE_EMAIL": "${user_config.juggle_email}",
+        "JUGGLE_PASSWORD": "${user_config.juggle_password}",
+        "MCP_CONFIRM_MODE": "${user_config.mcp_confirm_mode}"
+      }
+    }
+  },
+  "user_config": {
+    "juggle_email": {
+      "type": "string",
+      "title": "Juggle email",
+      "description": "The email address you sign in to whyjuggle.com with (a family account).",
+      "required": true,
+      "sensitive": false
+    },
+    "juggle_password": {
+      "type": "string",
+      "title": "Juggle password",
+      "description": "Your whyjuggle.com password. Google/Facebook-only sign-ins are not supported — set a password on the site first.",
+      "required": true,
+      "sensitive": true
+    },
+    "mcp_confirm_mode": {
+      "type": "string",
+      "title": "Write confirmation mode",
+      "description": "What a write (post a sit, accept/decline a sitter, cancel, message, favorite, review) does on a client that cannot show a prompt: ask-user (default) needs your approval in chat, auto lets the model confirm after reviewing the preview, refuse blocks writes.",
+      "required": false,
+      "default": "ask-user"
+    }
+  },
+  "tools": [
+    {
+      "name": "juggle_healthcheck",
+      "description": "Check the Juggle sign-in is configured and accepted, and that an authenticated page read works"
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22.5"
+    }
+  }
+}
