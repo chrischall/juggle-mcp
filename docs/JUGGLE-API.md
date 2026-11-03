@@ -414,7 +414,8 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 
 ## Live verification log (2026-11-03)
 - Login: `POST /log-in` → `{"success":true,"redirectUrl":…}` on success, `{"error":true}` on failure (both 200).
-- All 12 read tools ran against a real family account through the built server; the sitter tool returns no private
+- All 12 read tools ran against a real family account through the built server (none of them reads the sitter schedule,
+  §3.7, which therefore stays UNVERIFIED; §3.13 notifications and §3.14 post-a-job form data likewise); the sitter tool returns no private
   fields on any view, payments never return the Stripe SetupIntent / keys, and kids' details are absent by default.
 - `/web-api/conversations` answers 401 even signed in (the mobile app's token API); messages use `/messages` instead.
 - Writes: favorite / unfavorite verified (above). Post job, accept / decline sitter, cancel, send message and leave review
