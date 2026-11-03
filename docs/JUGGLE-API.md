@@ -217,6 +217,9 @@ page still returns up to 200 sitters (the cap holds even for `numSitters=1000`;
 `data.totalNumSitters` gives the full count), with favorites sorted FIRST —
 with or without the param. The tools therefore keep only `isFavorite` rows,
 which is complete for a family with fewer than 200 favorites.
+`juggle_list_favorites` therefore omits `data.totalNumSitters` (a city-wide
+count, not the favorites count — it was returned until 0.1.0) and adds a `note`
+when all 200 rows are favorites.
 There is no favorites page/component in the bundle. Favourite status is an
 `isFavorite` flag on sitter list items (3.5), sitter profiles (3.6) and booking
 sitters/requests (3.4). `juggle_list_favorites` must therefore be derived:
