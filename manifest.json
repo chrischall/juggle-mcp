@@ -67,6 +67,50 @@
     {
       "name": "juggle_healthcheck",
       "description": "Check the Juggle sign-in is configured and accepted, and that an authenticated page read works"
+    },
+    {
+      "name": "juggle_get_profile",
+      "description": "Your family profile: account, city, membership, job stats, saved addresses (ids for posting a sit), pets; kids only on request"
+    },
+    {
+      "name": "juggle_get_payments_summary",
+      "description": "Your city rates, saved cards (brand/last 4), membership, promo credits and recent transactions, in dollars"
+    },
+    {
+      "name": "juggle_list_bookings",
+      "description": "List your sits/jobs: status, service, start time, booked sitter, pending applications; active, past or by status"
+    },
+    {
+      "name": "juggle_get_booking",
+      "description": "One booking in detail: times, kids/pets, notes, applicants and booked sitters, payment total, what you can do"
+    },
+    {
+      "name": "juggle_list_sitters",
+      "description": "Search sitters in your city by availability window, services, keywords or name"
+    },
+    {
+      "name": "juggle_list_favorites",
+      "description": "List the sitters you have marked as favorites"
+    },
+    {
+      "name": "juggle_get_sitter",
+      "description": "A sitter public profile: rating, experience, school, certifications, bio — never private details"
+    },
+    {
+      "name": "juggle_get_reviews",
+      "description": "Reviews other families left for a sitter, with total count and average rating"
+    },
+    {
+      "name": "juggle_list_conversations",
+      "description": "Your message conversations with sitters: last message, time, unread count"
+    },
+    {
+      "name": "juggle_get_conversation",
+      "description": "Read the messages in one conversation, newest page first"
+    },
+    {
+      "name": "juggle_list_locations",
+      "description": "Cities Juggle serves and their published babysitting/petsitting rates (no sign-in needed)"
     }
   ],
   "compatibility": {
