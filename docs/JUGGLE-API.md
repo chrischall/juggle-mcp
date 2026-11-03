@@ -72,7 +72,8 @@ Set as axios defaults in chunk 2852:
 
 - Request bodies are JSON (axios with a plain object).
 - Every GET gets a cache-buster query param `timestamp=<ms>` (interceptor);
-  presumably not required.
+  NOT required (VERIFIED live 2026-11-03 — the MCP never sends it). `X-Client:
+  Website` is likewise ignorable; the MCP still sends it to look like the site.
 - `No-Loader: true` header on some calls only suppresses the UI spinner.
 - **Recommendation for the client:** send `X-CSRF-TOKEN` (latest `meta.csrfToken`)
   AND `X-XSRF-TOKEN` (decoded cookie) on writes, plus `X-Requested-With`,
@@ -199,14 +200,16 @@ and `profile` (snake_case: `id` (= profileId), `rating`, `certifications`,
 - `canSendMsg` false ⇒ messaging is gated behind a subscription (UI shows a
   subscription prompt). Same for "Invite Sitter to Apply".
 
-### 3.7 Sitter schedule — `GET /sitters/{profileId}/schedule` → `SitterSchedule` (chunk 8582, module 1296) — page VERIFIED live 2026-11-03 (`go-to-week` unchecked)
+### 3.7 Sitter schedule — `GET /sitters/{profileId}/schedule` → `SitterSchedule` (chunk 8582, module 1296) — page + `go-to-week` VERIFIED live 2026-11-03
 `data`: `id`, `sitterName`, `dotws`, `hours`, `dotwHours` (7×24 matrix of
 date-hour keys), `selectedDateHours[]` (available), `bookedDateHours[]`,
 `isThisWeek`, `previousWeekDate`, `nextWeekDate`. Live adds `isActive`;
 `dotws[]` items are `{dotw, date, dateUnformatted}`, `hours[]` numbers,
 `dotwHours` an array of string arrays; `id` is a string. No tool reads it yet.
 Other weeks: `GET /sitters/{id}/schedule/go-to-week?date=YYYY-MM-DD` → returns
-the availability object **directly** (not wrapped in `{meta,user,data}`).
+the availability object **directly** (not wrapped in `{meta,user,data}`) —
+VERIFIED live: the page `data` keys minus `id` / `sitterName`; any date works,
+not only `previousWeekDate` / `nextWeekDate`.
 
 ### 3.8 Favorites — derived from `GET /sitters` — VERIFIED live 2026-11-03; there is no `GET /favorites` (404)
 **`favorites=1` is echoed (`filters.favorites: "1"`) but does NOT filter**: the
@@ -415,7 +418,7 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 - [x] `GET /sitters` with and without filters; `numSitters` honoured; array params encoding (`services[]=` vs `services=`).
 - [x] Any favourites filter on `/sitters` (try `favorites=1`), else confirm the isFavorite-scan approach.
 - [x] `GET /sitters/{profileId}` keys; confirm profileId vs accountId vs userId mapping.
-- [x] `GET /sitters/{profileId}/schedule` shape (§3.7). `go-to-week` still unchecked.
+- [x] `GET /sitters/{profileId}/schedule` + `go-to-week` shape (§3.7).
 - [x] `GET /reviews/{accountId}` item keys.
 - [x] `GET /messages` and `GET /web-api/conversations` item keys; actual `conversation.url` pattern.
 - [ ] Does `GET /messages/users/{userId}` create a conversation as a side effect?
@@ -426,7 +429,7 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 - [x] `GET /bookings/{id}/cancel` (its reason list drove a live cancel) — [ ] and `GET /reviews/create/{bookingId}/{accountId}` shapes.
 - [ ] Writes — only with the owner's explicit go-ahead per call, on throwaway data: `POST /bookings` (then cancel it), favorite/unfavorite round-trip, send a message to a known contact, accept/decline on a real application, leave a review on a completed booking. Record the success body for each (does `POST /bookings` return an id?).
 - [ ] Whether a 2xx with `{error:true}` vs a 4xx/422 is used for validation failures on each write.
-- [ ] `X-Client: Website` and `timestamp` param — required or ignorable?
+- [x] `X-Client: Website` and `timestamp` param — required or ignorable? **Both ignorable**: reads and a write without `X-Client` behave identically; the client never sends `timestamp` (accepted when sent).
 
 ## Live verification log (2026-11-03)
 - Login: `POST /log-in` → `{"success":true,"redirectUrl":…}` on success, `{"error":true}` on failure (both 200).
@@ -449,5 +452,6 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
   envelope (§2). `GET /log-out` as XHR answers `{redirect:true,url:"/",screen:"HomeNoUser"}` but did not end the
   session; the plain (non-XHR) `GET /log-out` → 302 `/` does.
 - `/sitters?favorites=1` does not filter (see §3.8).
+- `go-to-week` shape checked (§3.7); `X-Client` and `timestamp` are both ignorable (§2).
 - Writes: favorite / unfavorite verified (above). Accept / decline sitter, send message and leave review
   reach other people and were deliberately NOT exercised; their request shapes are bundle-derived.
