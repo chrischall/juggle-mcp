@@ -72,8 +72,21 @@ export function looksExpired(res: JuggleResponse): boolean {
     const target = res.location ? resolveLocation(res.location, res.url) : undefined;
     return target !== undefined && target.pathname.replace(/\/+$/, '') === LOGIN_PATH;
   }
-  if (res.status >= 200 && res.status < 300) return isLoginPage(readPage(res.body));
+  if (res.status >= 200 && res.status < 300) return isLoginRedirect(res) || isLoginPage(readPage(res.body));
   return false;
+}
+
+/**
+ * Juggle answers a signed-out (or stale-cookie) XHR to a page route with
+ * HTTP 200 `{redirect: true, url: "/log-in", screen: "LogIn", data: []}` —
+ * verified live 2026-11-03. Matched on the redirect flag and target path,
+ * never on prose.
+ */
+function isLoginRedirect(res: JuggleResponse): boolean {
+  const body = tryParseJson(res.body);
+  if (!isObject(body) || body.redirect !== true || typeof body.url !== 'string') return false;
+  const target = resolveLocation(body.url, res.url);
+  return target !== undefined && target.pathname.replace(/\/+$/, '') === LOGIN_PATH;
 }
 
 /** Laravel validation (`{message, errors:{field:[…]}}`) or Juggle's `{msg}`. */

@@ -83,8 +83,12 @@ The SPA has **no global 401/419 interceptor** (full page loads mean the server
 just redirects). Signals, from the bundle + Laravel convention:
 - **401 / 419** — the upload helper (chunks 260, 7177, 8628, …) maps both to
   "Your session expired … Sign in again". 419 = CSRF/session mismatch.
-- **302 → `/log-in`** for page routes when signed out (seen anonymously for HTML;
-  XHR behaviour UNVERIFIED — may be 401 JSON or a redirect).
+- **200 `{redirect: true, url: "/log-in", screen: "LogIn", data: []}`** — what a
+  page route answers an XHR with when signed out or holding a stale session
+  cookie (VERIFIED live 2026-11-03, `/bookings` and `/notifications`). Not a
+  page envelope (no `meta`), so it must be matched on its own: `looksExpired`
+  checks `redirect === true` and the target path, never prose.
+- **302 → `/log-in`** for page routes when signed out (seen anonymously for HTML).
 - **200 with `meta.page === "LogIn"`** (if the redirect is followed).
 - **200 HTML** (login page) where JSON was expected.
 - `/web-api/conversations` signed out → **401 JSON** (seen live).
@@ -195,10 +199,12 @@ and `profile` (snake_case: `id` (= profileId), `rating`, `certifications`,
 - `canSendMsg` false ⇒ messaging is gated behind a subscription (UI shows a
   subscription prompt). Same for "Invite Sitter to Apply".
 
-### 3.7 Sitter schedule — `GET /sitters/{profileId}/schedule` → `SitterSchedule` (chunk 8582, module 1296) — UNVERIFIED
+### 3.7 Sitter schedule — `GET /sitters/{profileId}/schedule` → `SitterSchedule` (chunk 8582, module 1296) — page VERIFIED live 2026-11-03 (`go-to-week` unchecked)
 `data`: `id`, `sitterName`, `dotws`, `hours`, `dotwHours` (7×24 matrix of
 date-hour keys), `selectedDateHours[]` (available), `bookedDateHours[]`,
-`isThisWeek`, `previousWeekDate`, `nextWeekDate`.
+`isThisWeek`, `previousWeekDate`, `nextWeekDate`. Live adds `isActive`;
+`dotws[]` items are `{dotw, date, dateUnformatted}`, `hours[]` numbers,
+`dotwHours` an array of string arrays; `id` is a string. No tool reads it yet.
 Other weeks: `GET /sitters/{id}/schedule/go-to-week?date=YYYY-MM-DD` → returns
 the availability object **directly** (not wrapped in `{meta,user,data}`).
 
@@ -255,11 +261,11 @@ JSON helpers (reads):
 - `GET /payments/export-transactions-to-csv` (CSV download link)
 **Never surface `intent`/`publishableKey`/client secrets.**
 
-### 3.13 Notifications — `GET /notifications` → `Notifications` (chunk 6128) — UNVERIFIED (path guessed)
+### 3.13 Notifications — `GET /notifications` → `Notifications` (chunk 6128) — path VERIFIED live 2026-11-03 (`data.notifications[]`; item keys unchecked — the list was empty)
 `data.notifications[]`: `id, body, createdAt ("MM/DD/YYYY …"), url`. Past two
 months only.
 
-### 3.14 Post-a-job form data — `GET /bookings/create[/{sitterAccountId}]` → `PostAJob` (chunk 8383, form module 6364) — UNVERIFIED (base path inferred)
+### 3.14 Post-a-job form data — `GET /bookings/create[/{sitterAccountId}]` → `PostAJob` (chunk 8383, form module 6364) — base path + shape VERIFIED live 2026-11-03 (`/{sitterAccountId}` variant unchecked)
 `data`: `isActive`, `serviceAreaId`, `numKids`, `numPets`, `addr` (default),
 `hasSubscription`, `org`, `availablePromoCodesMap`, `sitterAccountId`,
 `sitterUserFullName`, `sittingDateTimes` (`date|start|end`), `baseRates`,
@@ -271,6 +277,11 @@ months only.
 `petsitting4OrMorePets`. Services: `babysitting`, `petsitting`,
 `homeschool_help`. Needed by `juggle_post_job` to resolve `addr` ids/service ids
 and preview the fee.
+Live (family account): `baseRates` is FLAT (not keyed by service area) and also
+carries `bookingFee` + `jugglePerHourAmt`; there is **no `serviceAreaId`** in
+`data` (so a family create sends `serviceAreaId: null`); `lists` has no
+`bookingStatuses`; `postOnOpenJobs` and `reoccurringBookingOneSitterOnly`
+defaults are numbers (0/1).
 Helper: `GET /bookings/create/check-sitter-availability?sitterAccountId=&startDate=&startTime=&endDate=&endTime=` → `{sitterIsAvailable}`.
 
 ### 3.15 Locations (public, no auth) — `GET /locations` → `Locations` (chunk 1503) — shape seen live anonymously
@@ -388,25 +399,25 @@ Stripe links.
 Use the owner's family account; record status + body SHAPE only (never values)
 into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 
-- [ ] `POST /log-in` success shape: status, `{error:false?, redirectUrl}`, which cookies rotate.
+- [x] `POST /log-in` success shape: status, `{error:false?, redirectUrl}`, which cookies rotate.
 - [ ] Whether the pre-login `X-CSRF-TOKEN` still works after login, or a fresh `meta.csrfToken` / `X-XSRF-TOKEN` is required (try a harmless write-free check: a GET is CSRF-exempt, so test on the first real write).
-- [ ] Signed-out XHR to a page route (e.g. `/bookings`): 302 to `/log-in`? 401 JSON? 200 `meta.page:"LogIn"`? → finalises `isExpired`.
+- [x] Signed-out XHR to a page route (e.g. `/bookings`): 302 to `/log-in`? 401 JSON? 200 `meta.page:"LogIn"`? → finalises `isExpired`. **Answer: 200 `{redirect:true,url:"/log-in",screen:"LogIn"}`** — same for a stale cookie (§2 session expiry).
 - [ ] Stale session cookie on a write: 419? 401? → finalises replay rule.
-- [ ] `GET /` (XHR) → `meta.page === "HomeFamily"`, `user.type === "family"`, `user.accountId` present.
-- [ ] `GET /my-profile` data keys (§3.2) and item keys of `addrs/kids/pets`.
-- [ ] `GET /bookings` item keys (§3.3); full status vocabulary.
-- [ ] `GET /bookings/{id}` keys incl. `bookingSitters[]` / `bookingRequests[]` item keys.
-- [ ] `GET /sitters` with and without filters; `numSitters` honoured; array params encoding (`services[]=` vs `services=`).
-- [ ] Any favourites filter on `/sitters` (try `favorites=1`), else confirm the isFavorite-scan approach.
-- [ ] `GET /sitters/{profileId}` keys; confirm profileId vs accountId vs userId mapping.
-- [ ] `GET /sitters/{profileId}/schedule` + `go-to-week` shape.
-- [ ] `GET /reviews/{accountId}` item keys.
-- [ ] `GET /messages` and `GET /web-api/conversations` item keys; actual `conversation.url` pattern.
+- [x] `GET /` (XHR) → `meta.page === "HomeFamily"`, `user.type === "family"`, `user.accountId` present.
+- [x] `GET /my-profile` data keys (§3.2) and item keys of `addrs/kids/pets`.
+- [x] `GET /bookings` item keys (§3.3); full status vocabulary.
+- [x] `GET /bookings/{id}` keys incl. `bookingSitters[]` / `bookingRequests[]` item keys.
+- [x] `GET /sitters` with and without filters; `numSitters` honoured; array params encoding (`services[]=` vs `services=`).
+- [x] Any favourites filter on `/sitters` (try `favorites=1`), else confirm the isFavorite-scan approach.
+- [x] `GET /sitters/{profileId}` keys; confirm profileId vs accountId vs userId mapping.
+- [x] `GET /sitters/{profileId}/schedule` shape (§3.7). `go-to-week` still unchecked.
+- [x] `GET /reviews/{accountId}` item keys.
+- [x] `GET /messages` and `GET /web-api/conversations` item keys; actual `conversation.url` pattern.
 - [ ] Does `GET /messages/users/{userId}` create a conversation as a side effect?
-- [ ] Conversation page keys (`conversationId`, `messages[]`, `isActive`).
-- [ ] `GET /payments` keys + the three JSON helpers; confirm nothing secret leaks into the projection.
-- [ ] `GET /notifications` path + shape.
-- [ ] `GET /bookings/create` path (+ `/{sitterAccountId}`) and `lists.*` option shapes, `baseRates` keyed or flat.
+- [x] Conversation page keys (`conversationId`, `messages[]`, `isActive`).
+- [x] `GET /payments` keys + the three JSON helpers; confirm nothing secret leaks into the projection.
+- [x] `GET /notifications` path (§3.13) — `data.notifications[]`; item keys unchecked (empty list).
+- [x] `GET /bookings/create` path (+ `/{sitterAccountId}`) and `lists.*` option shapes, `baseRates` keyed or flat. **Flat; no `serviceAreaId`** (§3.14). The `/{sitterAccountId}` variant is still unchecked.
 - [ ] `GET /bookings/{id}/cancel` and `GET /reviews/create/{bookingId}/{accountId}` shapes.
 - [ ] Writes — only with the owner's explicit go-ahead per call, on throwaway data: `POST /bookings` (then cancel it), favorite/unfavorite round-trip, send a message to a known contact, accept/decline on a real application, leave a review on a completed booking. Record the success body for each (does `POST /bookings` return an id?).
 - [ ] Whether a 2xx with `{error:true}` vs a 4xx/422 is used for validation failures on each write.
@@ -414,9 +425,13 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 
 ## Live verification log (2026-11-03)
 - Login: `POST /log-in` → `{"success":true,"redirectUrl":…}` on success, `{"error":true}` on failure (both 200).
-- All 12 read tools ran against a real family account through the built server (none of them reads the sitter schedule,
-  §3.7, which therefore stays UNVERIFIED; §3.13 notifications and §3.14 post-a-job form data likewise); the sitter tool returns no private
+- All 12 read tools ran against a real family account through the built server (none of them reads the sitter schedule
+  §3.7, notifications §3.13 or the post-a-job form §3.14 — those pages were checked directly in a later pass); the sitter tool returns no private
   fields on any view, payments never return the Stripe SetupIntent / keys, and kids' details are absent by default.
 - `/web-api/conversations` answers 401 even signed in (the mobile app's token API); messages use `/messages` instead.
+- Signed-out / stale-cookie XHR → HTTP 200 `{redirect:true,url:"/log-in",screen:"LogIn",data:[]}`. `looksExpired`
+  did not recognise it (it only knew `meta.page === "LogIn"`), so an expired session surfaced as an error instead of
+  the one re-login + replay; fixed.
+- `GET /bookings/create` (PostAJob) shape checked (§3.14); `juggle_post_job`'s preview built correctly from it (not sent).
 - Writes: favorite / unfavorite verified (above). Post job, accept / decline sitter, cancel, send message and leave review
   reach other people and were deliberately NOT exercised; their request shapes are bundle-derived.

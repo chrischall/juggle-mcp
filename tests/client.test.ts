@@ -309,6 +309,8 @@ describe('session expiry: exactly one re-login + replay', () => {
     ['a 419', { status: 419, body: { message: 'CSRF token mismatch.' } }],
     ['the login page served in place (XHR JSON)', { body: page('LogIn', {}, { user: null }) }],
     ['the login page served in place (HTML)', { body: htmlPage(page('LogIn', {}, { user: null })) }],
+    // What whyjuggle.com actually answers a signed-out / stale-cookie XHR with (live 2026-11-03).
+    ['the XHR redirect envelope to /log-in', { body: { redirect: true, url: '/log-in', screen: 'LogIn', data: [] } }],
   ])('recovers from %s', async (_label, expiredReply) => {
     const site = new FakeSite().on('GET', '/bookings', (req, s) => (s.signedIn(req) ? { body: bookings } : expiredReply));
     const client = makeClient(site);
@@ -361,6 +363,11 @@ describe('session expiry: exactly one re-login + replay', () => {
     expect(looksExpired({ ...base, status: 302, location: 'http://[bad' })).toBe(false);
     expect(looksExpired({ ...base, status: 302, location: '/log-in/' })).toBe(true);
     expect(looksExpired({ ...base, status: 500, body: JSON.stringify(page('LogIn')) })).toBe(false);
+    // The XHR redirect envelope counts only when it points at the login page.
+    expect(looksExpired({ ...base, status: 200, body: JSON.stringify({ redirect: true, url: '/log-in', screen: 'LogIn', data: [] }) })).toBe(true);
+    expect(looksExpired({ ...base, status: 200, body: JSON.stringify({ redirect: true, url: 'https://whyjuggle.com/log-in/' }) })).toBe(true);
+    expect(looksExpired({ ...base, status: 200, body: JSON.stringify({ redirect: true, url: '/bookings', screen: 'Bookings' }) })).toBe(false);
+    expect(looksExpired({ ...base, status: 200, body: JSON.stringify({ redirect: false, url: '/log-in' }) })).toBe(false);
     // A message whose TEXT mentions the login page is not the login page.
     expect(looksExpired({ ...base, status: 200, body: JSON.stringify(page('Conversation', { messages: [{ content: '"page":"LogIn" log-in' }] })) })).toBe(false);
     expect(looksExpired({ ...base, status: 200, body: htmlPage(page('Conversation', { messages: [{ content: 'server-data="{&quot;meta&quot;:{&quot;page&quot;:&quot;LogIn&quot;}}"' }] })) })).toBe(false);
