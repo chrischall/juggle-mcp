@@ -287,20 +287,22 @@ accept-job/decline-job (sitter), admin routes, group-admin routes,
 
 ## 4. Writes
 
+Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **All UNVERIFIED until the live write pass below.**
+
 All carry the §2 headers; JSON bodies. Responses commonly use
 `{error: true, msg}` **with HTTP 200** for business failures — a 200 is not
 success until `error` is checked.
 
-| Tool (planned) | Method + path | Body (from call site) | Response (bundle) | Chunk |
+| Tool | Method + path | Body (from call site) | Response (bundle) | Chunk |
 |---|---|---|---|---|
-| post job | `POST /bookings` | see below | `{error, msg}`; success → no id returned (UI just shows success) | 8383 / 6364 |
-| accept sitter | `PATCH /bookings/{bookingId}/accept-sitter/{sitterAccountId}` | `{forAll?: bool}` (true = all open jobs in a reoccurring series) | `{error?, msg?, status, displayStatus, numBookedSitters, bookingSitters, bookingRequests}` | 6891 |
-| decline sitter | `PATCH /bookings/{bookingId}/decline-sitter/{sitterAccountId}` | `{forAll?: bool}` | `{bookingSitters, bookingRequests}` | 6891 |
-| cancel booking | `PATCH /bookings/{bookingId}/cancel` | `{requireCancellationPenalty, cancellationReason, otherCancellationReason, cancellationPenalty}` | `{error, msg}` / `{confirmationRequired, paymentIntent, cancellationFee, bookingSitterFees, …}` / `{redirectToBookings}` | 1256 |
-| send message | `POST /messages` | `{conversationId, type: "text", content}` | `{error?, msg?, messages: [...]}` (full refreshed thread) | 8628 |
-| favorite sitter | `POST /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
-| unfavorite sitter | `DELETE /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
-| leave review | `POST /reviews/{bookingId}/{revieweeAccountId}` | `{rating, comments, outsideApp}` | UI ignores body; redirects to `/bookings/{bookingId}` | 30 |
+| `juggle_post_job` | `POST /bookings` | see below | `{error, msg}`; success → no id returned (UI just shows success) | 8383 / 6364 |
+| `juggle_accept_sitter` | `PATCH /bookings/{bookingId}/accept-sitter/{sitterAccountId}` | `{forAll?: bool}` (true = all open jobs in a reoccurring series) | `{error?, msg?, status, displayStatus, numBookedSitters, bookingSitters, bookingRequests}` | 6891 |
+| `juggle_decline_sitter` | `PATCH /bookings/{bookingId}/decline-sitter/{sitterAccountId}` | `{forAll?: bool}` | `{bookingSitters, bookingRequests}` | 6891 |
+| `juggle_cancel_booking` | `PATCH /bookings/{bookingId}/cancel` | `{requireCancellationPenalty, cancellationReason, otherCancellationReason, cancellationPenalty}` | `{error, msg}` / `{confirmationRequired, paymentIntent, cancellationFee, bookingSitterFees, …}` / `{redirectToBookings}` | 1256 |
+| `juggle_send_message` | `POST /messages` | `{conversationId, type: "text", content}` | `{error?, msg?, messages: [...]}` (full refreshed thread) | 8628 |
+| `juggle_favorite_sitter` | `POST /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
+| `juggle_unfavorite_sitter` | `DELETE /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
+| `juggle_leave_review` | `POST /reviews/{bookingId}/{revieweeAccountId}` | `{rating, comments, outsideApp}` | UI ignores body; redirects to `/bookings/{bookingId}` | 30 |
 
 ### 4.1 `POST /bookings` (create) — body fields
 Family create sends (`edit`/`admin` are absent for a family create; `edit:true`
@@ -341,9 +343,12 @@ Page `GET /bookings/{bookingId}/cancel` (`CancelBooking`, chunk 1256) `data`:
   PaymentIntent the browser confirms, then
   `PATCH /bookings/{id}/confirm-booking-cancellation` — **charges a card → OUT
   OF SCOPE. The MCP must never send `cancellationFee`.** If
-  `requireCancellationPenalty` is true, either refuse or require an explicit
-  `oneStarReview` acknowledgement (owner decision pending) and treat any
-  `confirmationRequired` response as "not cancelled — finish on the website".
+  `requireCancellationPenalty` (or `cancelingTooCloseToBookingStart`) is true,
+  `juggle_cancel_booking` refuses unless the caller passes
+  `accept_one_star_review: true`, then sends `cancellationPenalty:
+  "oneStarReview"`; any `confirmationRequired` response is reported as "not
+  cancelled — finish on the website" and the payment intent is never read
+  back. (Implemented choice; the owner can tighten it to a plain refusal.)
 - `cancellationReason` is required (an id from `lists.bookingCancellationReasons`).
 - Series cancel: `POST /bookings/{id}/cancel-all-open-and-booked-reoccurring-jobs`
   → `{error?, msg, status, displayStatus, reoccurringSeries, bookingSitters,

@@ -402,6 +402,16 @@ describe('send', () => {
     expect(bare.serverMessage).toBeUndefined();
   });
 
+  it('anyBody: a non-JSON 2xx is {} (the UI ignores it); without it, a typed error; {error:true} still refuses', async () => {
+    const site = new FakeSite()
+      .on('POST', '/favorites/2002', { body: '<html>ok</html>', headers: { 'content-type': 'text/html' } })
+      .on('POST', '/reviews/1001/2002', { body: { error: true, msg: 'Already reviewed.' } });
+    const client = makeClient(site);
+    expect(await client.send('POST', '/favorites/2002', undefined, { anyBody: true })).toEqual({ status: 200, data: {} });
+    await expect(client.send('POST', '/favorites/2002')).rejects.toThrow(/non-JSON/);
+    await expect(client.send('POST', '/reviews/1001/2002', {}, { anyBody: true })).rejects.toThrow(/Already reviewed/);
+  });
+
   it('reports a 422 with the Laravel validation messages', async () => {
     const site = new FakeSite().on('POST', '/reviews/1001/2002', {
       status: 422,

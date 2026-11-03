@@ -33,6 +33,15 @@ export interface SendResult<T = unknown> {
   data: T;
 }
 
+export interface SendOptions {
+  /**
+   * Accept a 2xx whose body is not JSON (e.g. an HTML page) as success with
+   * `data: {}`. For writes whose response the site's own UI ignores
+   * (favorites, reviews). A JSON `{error: true}` is still a refusal.
+   */
+  anyBody?: boolean;
+}
+
 export interface JuggleClientOptions extends ConfigInput {
   fetchImpl?: FetchLike;
 }
@@ -194,7 +203,7 @@ export class JuggleClient {
    * and `WriteOutcomeUnknownError` for a 5xx / transport failure after the
    * request went out: the token is spent and a blind retry could double-send.
    */
-  async send<T = unknown>(method: WriteMethod, path: string, body?: unknown): Promise<SendResult<T>> {
+  async send<T = unknown>(method: WriteMethod, path: string, body?: unknown, opts: SendOptions = {}): Promise<SendResult<T>> {
     const url = this.url(path);
     const payload = body === undefined ? undefined : JSON.stringify(body);
     const res = await this.transport(method, () =>
@@ -218,7 +227,7 @@ export class JuggleClient {
     if (res.status >= 300 && res.status < 400 && !looksExpired(res)) {
       return { status: res.status, data: { redirect: res.location ?? null } as T };
     }
-    return { status: res.status, data: this.jsonFrom(res, method, path) as T };
+    return { status: res.status, data: this.jsonFrom(res, method, path, opts.anyBody === true) as T };
   }
 
   // ---------------------------------------------------------------- internals
@@ -309,12 +318,17 @@ export class JuggleClient {
     return page;
   }
 
-  /** The parsed JSON of a final response (`{}` when empty), or a typed error. */
-  private jsonFrom(res: JuggleResponse, method: string, path: string): unknown {
+  /**
+   * The parsed JSON of a final response (`{}` when empty), or a typed error.
+   * `anyBody`: a 2xx that is not JSON (an HTML page) is `{}` rather than an
+   * error — for writes whose response the site's own UI ignores.
+   */
+  private jsonFrom(res: JuggleResponse, method: string, path: string, anyBody = false): unknown {
     this.assertOk(res, method, path);
     if (res.body.trim() === '') return {};
     const json = tryParseJson(res.body);
     if (json === undefined) {
+      if (anyBody) return {};
       throw new JuggleApiError(`Juggle answered ${method} ${path} with a non-JSON body (HTTP ${res.status}).`, { status: res.status });
     }
     if (isObject(json) && json.error === true) {

@@ -67,6 +67,8 @@ src/
   version.ts        # VERSION (release-please marker)
   tools/index.ts    # toolRegistrars — the list index.ts serves and the tests drive
   tools/*.ts        # register<Area>Tools(server, client)
+  tools/writes.ts   # the confirm-gated writes (defineWrite + registerWrite)
+  tools/write-kit.ts # write annotations, injection rule, sendOnce (writeOrUnknown)
 tests/              # vitest; FakeSite in helpers.ts is an in-memory whyjuggle.com
 docs/JUGGLE-API.md  # the bundle-derived API map + live verification checklist
 ```

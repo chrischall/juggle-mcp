@@ -333,3 +333,70 @@ export const locationsData = {
     },
   },
 };
+
+// ---------------------------------------------------------------- write pages
+
+/** `GET /bookings/create` → `PostAJob` (§3.14). baseRates keyed by serviceAreaId, in cents/hour. */
+export const postJobFormData = {
+  isActive: true,
+  serviceAreaId: 5,
+  numKids: 2,
+  numPets: null,
+  addr: 801,
+  hasSubscription: false,
+  org: null,
+  availablePromoCodesMap: {},
+  sitterAccountId: null,
+  sitterUserFullName: null,
+  sittingDateTimes: null,
+  baseRates: { 5: { babysitting1Kid: 1800, babysitting2Kids: 2000, babysitting3Kids: 2200, babysitting4Kids: 2400, multisitter: 1800, petsitting1Pet: 1500, petsitting2Pets: 1700, petsitting3Pets: 1900, petsitting4OrMorePets: 2100 } },
+  surgePrices: { 5: [] },
+  lists: {
+    addrs: [
+      { id: 801, name: '1 Test St, Testville, NC 28200' },
+      { id: 802, name: '2 Other Ave, Testville, NC 28200' },
+    ],
+    services: [
+      { id: 'babysitting', name: 'Babysitting' },
+      { id: 'petsitting', name: 'Petsitting' },
+      { id: 'homeschool_help', name: 'Homeschool Help' },
+    ],
+    daysOfTheWeek: [],
+    tipPercentages: [],
+    availablePromoCodes: [],
+    yesNo: [],
+    bookingStatuses: [],
+  },
+};
+
+/** `GET /bookings/{id}/cancel` → `CancelBooking` (§4.2). */
+export function cancelPageData(opts: { tooClose?: boolean } = {}) {
+  return {
+    bookingId: 3001,
+    userType: 'family',
+    cancelingTooCloseToBookingStart: opts.tooClose === true,
+    requireCancellationPenalty: opts.tooClose === true,
+    cancellationFee: 1275,
+    bookingStarted: false,
+    publishableKey: CANARIES.publishableKey,
+    lists: {
+      bookingCancellationReasons: [
+        { id: 'plans_changed', name: 'Plans changed' },
+        { id: 'found_other_care', name: 'Found other care' },
+        { id: 'other', name: 'Other' },
+      ],
+    },
+  };
+}
+
+/** `GET /reviews/create/{bookingId}/{accountId}` → `LeaveAReview` (§4.4). */
+export function reviewCreateData(opts: { already?: boolean } = {}) {
+  return {
+    bookingId: 3003,
+    accountId: 1101,
+    userName: 'Test Sitter',
+    userType: 'sitter',
+    reviewAlreadyProvided: opts.already === true,
+    lists: { yesNo: [{ id: 1, name: 'Yes' }, { id: 0, name: 'No' }] },
+  };
+}

@@ -111,6 +111,38 @@
     {
       "name": "juggle_list_locations",
       "description": "Cities Juggle serves and their published babysitting/petsitting rates (no sign-in needed)"
+    },
+    {
+      "name": "juggle_post_job",
+      "description": "Post a one-time babysitting/petsitting/homeschool-help job (sit), optionally inviting a sitter (confirm-gated)"
+    },
+    {
+      "name": "juggle_accept_sitter",
+      "description": "Accept (book) a sitter who applied to one of your jobs (confirm-gated)"
+    },
+    {
+      "name": "juggle_decline_sitter",
+      "description": "Decline a sitter's application to one of your jobs (confirm-gated)"
+    },
+    {
+      "name": "juggle_cancel_booking",
+      "description": "Cancel a booking; late cancels only via the one-star-review penalty, never the fee (confirm-gated)"
+    },
+    {
+      "name": "juggle_send_message",
+      "description": "Send a text message in one of your sitter conversations (confirm-gated)"
+    },
+    {
+      "name": "juggle_favorite_sitter",
+      "description": "Add a sitter to your favorites (confirm-gated)"
+    },
+    {
+      "name": "juggle_unfavorite_sitter",
+      "description": "Remove a sitter from your favorites (confirm-gated)"
+    },
+    {
+      "name": "juggle_leave_review",
+      "description": "Leave a 0-5 star (half-star) review of a sitter for a finished booking (confirm-gated)"
     }
   ],
   "compatibility": {

@@ -6,6 +6,7 @@ import { registerHealthcheckTools } from './healthcheck.js';
 import { registerLocationTools } from './locations.js';
 import { registerMessageTools } from './messages.js';
 import { registerSitterTools } from './sitters.js';
+import { registerWriteTools } from './writes.js';
 
 /**
  * Every tool registrar, in order. index.ts serves exactly this list and the
@@ -19,4 +20,5 @@ export const toolRegistrars: ToolRegistrar<JuggleClient>[] = [
   registerSitterTools,
   registerMessageTools,
   registerLocationTools,
+  registerWriteTools,
 ];
