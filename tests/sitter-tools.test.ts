@@ -66,6 +66,25 @@ describe('juggle_list_favorites', () => {
     expect((r.json.sitters as Rec[]).map((x) => x.name)).toEqual(['Test Sitter']);
     expect(r.json.returned).toBe(1);
   });
+
+  // Live 2026-11-03: favorites=1 is echoed but NOT applied — every sitter comes back
+  // (favorites sorted first, max 200), so only an explicit isFavorite counts.
+  it('drops rows whose isFavorite is missing, and does not report the city-wide sitter count', async () => {
+    const noFlag = { ...sittersData.sitters[1], id: 1209, accountId: 1109, name: 'Unflagged Sitter' } as Rec;
+    delete noFlag.isFavorite;
+    const s = siteWith({ '/sitters': ['FindASitter', { ...sittersData, totalNumSitters: 850, sitters: [...sittersData.sitters, noFlag] }] });
+    const r = await callTool(makeClient(s), 'juggle_list_favorites');
+    expect((r.json.sitters as Rec[]).map((x) => x.name)).toEqual(['Test Sitter']);
+    expect(r.json).not.toHaveProperty('totalNumSitters');
+  });
+
+  it('says the list may be cut short when every one of the 200 rows is a favorite', async () => {
+    const fav = sittersData.sitters[0] as Rec;
+    const rows = Array.from({ length: 200 }, (_, i) => ({ ...fav, id: 5000 + i, accountId: 6000 + i }));
+    const r = await callTool(makeClient(siteWith({ '/sitters': ['FindASitter', { ...sittersData, sitters: rows }] })), 'juggle_list_favorites');
+    expect(r.json.returned).toBe(200);
+    expect(String(r.json.note)).toMatch(/200/);
+  });
 });
 
 describe('juggle_get_sitter', () => {

@@ -95,7 +95,7 @@ describe('juggle_post_job', () => {
     expect(posts).toHaveLength(1);
     expect(jsonBody(posts[0])).toEqual({
       markBookingAsAddedEditedBySetUser: 1,
-      serviceAreaId: 5,
+      serviceAreaId: null, // a family's form has none (live)
       service: 'babysitting',
       status: null,
       startDate: '2026-12-05',
@@ -446,9 +446,8 @@ describe.each([
 ] as const)('%s', (tool, method, accountId, startsFavorite) => {
   function site() {
     const s = new FakeSite();
-    s.on('GET', '/sitters', authedPage((req) =>
-      page('FindASitter', req.search.includes('favorites=1') ? { ...sittersData, sitters: sittersData.sitters.filter((x) => x.isFavorite === 1) } : sittersData),
-    ));
+    // Like the live site: favorites=1 does not filter (§3.8).
+    s.on('GET', '/sitters', authedPage(page('FindASitter', sittersData)));
     onWrite(s, method, `/favorites/${accountId}`, () => ({ body: '<html>ok</html>', headers: { 'content-type': 'text/html' } }));
     return s;
   }

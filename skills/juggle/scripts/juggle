@@ -102,8 +102,10 @@ do_get() {
 }
 
 # "Your session is gone" — by status and page IDENTITY, never by prose (message
-# bodies are other people's text): 401/419, landing on /log-in, or the login
-# page served in place (XHR JSON meta.page, or an HTML page's server-data).
+# bodies are other people's text): 401/419, landing on /log-in, the XHR
+# redirect envelope {redirect:true,url:"/log-in"} (what a stale-cookie read
+# actually gets, live 2026-11-03), or the login page served in place (XHR JSON
+# meta.page, or an HTML page's server-data).
 is_expired() {
   case $CODE in 401 | 419) return 0 ;; esac
   local u=${FINAL_URL%%\?*}
@@ -112,6 +114,7 @@ is_expired() {
   case $CODE in
     2??)
       if jq -e 'type == "object" and .meta.page == "LogIn"' "$BODY" >/dev/null 2>&1; then return 0; fi
+      if jq -e 'type == "object" and .redirect == true and ((.url // "") | sub("^https?://[^/]+"; "") | sub("[?#].*$"; "") | rtrimstr("/")) == "/log-in"' "$BODY" >/dev/null 2>&1; then return 0; fi
       if grep -q 'server-data="[^"]*&quot;page&quot;:&quot;LogIn&quot;' "$BODY" 2>/dev/null; then return 0; fi
       ;;
   esac

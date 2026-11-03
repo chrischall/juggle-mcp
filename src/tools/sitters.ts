@@ -38,14 +38,30 @@ function compactSitterItem(item: unknown): Rec {
   };
 }
 
-function sitterListResult(view: string | undefined, data: Rec, sitters: unknown[], route: string) {
-  const head = { totalNumSitters: num(data.totalNumSitters), returned: sitters.length };
+function sitterListResult(view: string | undefined, data: Rec, sitters: unknown[], route: string, note?: string) {
+  const head = { totalNumSitters: num(data.totalNumSitters), returned: sitters.length, ...(note ? { note } : {}) };
   if (view === 'raw') return respond(view, { ...data, ...head, sitters }, { context: route });
   return respond(
     view,
     { ...head, sitters, filters: data.filters },
     { context: route, project: () => ({ ...head, sitters: sitters.map(compactSitterItem) }) },
   );
+}
+
+/** Most rows `GET /sitters` returns, whatever `numSitters` asks for (live 2026-11-03). */
+const SITTER_PAGE_CAP = 200;
+
+/**
+ * Your favorite sitters. `favorites=1` is echoed by the site but NOT applied:
+ * `/sitters` returns the city's sitters with favorites sorted first, capped at
+ * 200 (live 2026-11-03, docs §3.8). So keep only rows explicitly flagged
+ * `isFavorite`; `truncated` means all 200 rows were favorites and more may exist.
+ */
+export async function readFavorites(client: JuggleClient): Promise<{ data: Rec; favorites: Rec[]; truncated: boolean }> {
+  const data = rec((await client.getPage('/sitters', { favorites: 1, numSitters: SITTER_PAGE_CAP })).data);
+  const rows = requireList(data, 'sitters', '/sitters?favorites=1').map(rec);
+  const favorites = rows.filter((s) => flag(s.isFavorite) === true);
+  return { data, favorites, truncated: rows.length >= SITTER_PAGE_CAP && favorites.length === rows.length };
 }
 
 // -------------------------------------------------------------- sitter profile
@@ -169,11 +185,12 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
       }),
     },
     async ({ view }) => {
-      const page = await client.getPage('/sitters', { favorites: 1, numSitters: 200 });
-      const data = rec(page.data);
-      // Keep only favorites even if the server ever ignores the filter.
-      const favorites = requireList(data, 'sitters', '/sitters?favorites=1').filter((s) => flag(rec(s).isFavorite) !== false);
-      return sitterListResult(view, data, favorites, 'GET /sitters?favorites=1');
+      const { data, favorites, truncated } = await readFavorites(client);
+      // data.totalNumSitters counts every sitter in the city, not your favorites.
+      const { totalNumSitters: _all, ...rest } = data;
+      return sitterListResult(view, rest, favorites, 'GET /sitters?favorites=1', truncated
+        ? `Juggle returns at most ${SITTER_PAGE_CAP} sitters and all ${SITTER_PAGE_CAP} were favorites — there may be more.`
+        : undefined);
     },
   );
 

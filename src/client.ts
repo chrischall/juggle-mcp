@@ -60,18 +60,21 @@ function resolveLocation(location: string, base: string): URL | undefined {
   }
 }
 
+/** Whether a redirect target (absolute or relative to `base`) is the login page. */
+function pointsAtLogin(location: string, base: string): boolean {
+  return resolveLocation(location, base)?.pathname.replace(/\/+$/, '') === LOGIN_PATH;
+}
+
 /**
  * Whether a response means "your session is gone": Laravel's 401 / 419 (CSRF
- * or session mismatch), a redirect to /log-in, or the login page itself served
- * in place (XHR JSON whose `meta.page` is `LogIn`, or an HTML page embedding
- * it). Identity of the PAGE, never prose — message bodies are user text.
+ * or session mismatch — what a stale-cookie WRITE gets), a redirect to
+ * /log-in, the XHR redirect envelope (what a stale-cookie READ gets), or the
+ * login page itself served in place (XHR JSON whose `meta.page` is `LogIn`,
+ * or an HTML page embedding it). Identity of the PAGE, never prose — message bodies are user text.
  */
 export function looksExpired(res: JuggleResponse): boolean {
   if (res.status === 401 || res.status === 419) return true;
-  if (res.status >= 300 && res.status < 400) {
-    const target = res.location ? resolveLocation(res.location, res.url) : undefined;
-    return target !== undefined && target.pathname.replace(/\/+$/, '') === LOGIN_PATH;
-  }
+  if (res.status >= 300 && res.status < 400) return res.location !== undefined && pointsAtLogin(res.location, res.url);
   if (res.status >= 200 && res.status < 300) return isLoginRedirect(res) || isLoginPage(readPage(res.body));
   return false;
 }
@@ -84,9 +87,7 @@ export function looksExpired(res: JuggleResponse): boolean {
  */
 function isLoginRedirect(res: JuggleResponse): boolean {
   const body = tryParseJson(res.body);
-  if (!isObject(body) || body.redirect !== true || typeof body.url !== 'string') return false;
-  const target = resolveLocation(body.url, res.url);
-  return target !== undefined && target.pathname.replace(/\/+$/, '') === LOGIN_PATH;
+  return isObject(body) && body.redirect === true && typeof body.url === 'string' && pointsAtLogin(body.url, res.url);
 }
 
 /** Laravel validation (`{message, errors:{field:[…]}}`) or Juggle's `{msg}`. */
