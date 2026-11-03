@@ -80,7 +80,9 @@ describe('packaging', () => {
 
   it('release-please: first release is 0.1.0, 0.x stays 0.x, every version file is bumped', () => {
     const cfg = read('release-please-config.json').packages['.'];
-    expect(read('.release-please-manifest.json')['.']).toBe('0.0.0');
+    // 0.0.0 before the first release, then whatever release-please has cut — but
+    // never a 1.x by accident (bump-minor-pre-major keeps feat: at 0.x).
+    expect(read('.release-please-manifest.json')['.']).toMatch(/^0\.\d+\.\d+$/);
     expect(cfg['package-name']).toBe('@chrischall/juggle-mcp');
     expect(cfg['initial-version']).toBe('0.1.0');
     expect(cfg['bump-minor-pre-major']).toBe(true);
