@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/server';
-import { toolAnnotations } from '@chrischall/mcp-utils';
+import { UNTRUSTED_DESCRIPTION_SUFFIX, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { JuggleClient } from '../client.js';
 import { JuggleId, UNTRUSTED_NOTES, flag, limitInput, num, offsetInput, rec, requireList, respond, str, viewInput, type Rec } from './shared.js';
@@ -26,7 +26,9 @@ export function registerMessageTools(server: McpServer, client: JuggleClient): v
     {
       title: 'List your Juggle message conversations',
       description:
-        "List your Juggle message conversations (inbox / chats with sitters): who, the last message, when, and how many unread messages each has. Returns conversationId for juggle_get_conversation. unread_only keeps just the conversations with unread messages.",
+        "List your Juggle message conversations (inbox / chats with sitters): who, the last message, when, and how many unread messages each has. Returns conversationId for juggle_get_conversation. unread_only keeps just the conversations with unread messages." +
+        ' ' +
+        UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: 'List Juggle conversations', readOnly: true, openWorld: true }),
       inputSchema: z.object({
         unread_only: z.boolean().optional().describe('Only conversations with unread messages (default false).'),
@@ -56,7 +58,9 @@ export function registerMessageTools(server: McpServer, client: JuggleClient): v
     {
       title: 'Read a Juggle message conversation',
       description:
-        "Read the messages in one Juggle conversation (chat with a sitter): sender, whether you sent it, time, and text — the most recent `limit` messages, oldest first; page further back with offset. conversation_id comes from juggle_list_conversations. Opening a conversation is what the website does to show it, so Juggle may mark its messages as read, exactly as viewing it on whyjuggle.com would.",
+        "Read the messages in one Juggle conversation (chat with a sitter): sender, whether you sent it, time, and text — the most recent `limit` messages, oldest first; page further back with offset. conversation_id comes from juggle_list_conversations. Opening a conversation is what the website does to show it, so Juggle may mark its messages as read, exactly as viewing it on whyjuggle.com would." +
+        ' ' +
+        UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: 'Read a Juggle conversation', readOnly: true, openWorld: true }),
       inputSchema: z.object({
         conversation_id: JuggleId.describe('The conversation id (conversationId from juggle_list_conversations).'),

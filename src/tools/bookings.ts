@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/server';
-import { toolAnnotations } from '@chrischall/mcp-utils';
+import { UNTRUSTED_DESCRIPTION_SUFFIX, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { JuggleClient } from '../client.js';
 import {
@@ -197,7 +197,9 @@ export function registerBookingTools(server: McpServer, client: JuggleClient): v
     {
       title: 'Get a Juggle booking with its applicants',
       description:
-        "Get one Juggle booking (sit/job) in detail: status, service, dates and times, kids/pets and notes, address, the sitters who APPLIED (applicants — accountId, name, rating, jobs completed, favorite, hours until the application expires) and the sitters BOOKED (with their phone number for the sit), the family payment total and breakdown, and whether you can cancel / edit / message. booking_id comes from juggle_list_bookings. Applicant accountIds are what accepting or declining a sitter needs; profileId opens juggle_get_sitter; userId is the sitter's messaging id.",
+        "Get one Juggle booking (sit/job) in detail: status, service, dates and times, kids/pets and notes, address, the sitters who APPLIED (applicants — accountId, name, rating, jobs completed, favorite, hours until the application expires) and the sitters BOOKED (with their phone number for the sit), the family payment total and breakdown, and whether you can cancel / edit / message. booking_id comes from juggle_list_bookings. Applicant accountIds are what accepting or declining a sitter needs; profileId opens juggle_get_sitter; userId is the sitter's messaging id." +
+        ' ' +
+        UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: 'Get a Juggle booking', readOnly: true, openWorld: true }),
       inputSchema: z.object({
         booking_id: JuggleId.describe('The booking id (bookingId from juggle_list_bookings).'),

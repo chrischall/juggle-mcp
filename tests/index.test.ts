@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { UNTRUSTED_DESCRIPTION_SUFFIX } from '@chrischall/mcp-utils';
 import { createTestHarness } from '@chrischall/mcp-utils/test';
 import { toolRegistrars } from '../src/tools/index.js';
 import { FakeSite, makeClient } from './helpers.js';
@@ -30,6 +31,32 @@ describe('tool roster', () => {
     for (const t of await servedTools()) {
       expect(t.name).toMatch(/^juggle_[a-z_]+$/);
       expect((t.description ?? '').length, t.name).toBeGreaterThan(20);
+    }
+  });
+});
+
+const UNTRUSTED_TOOLS = [
+  'juggle_get_booking',
+  'juggle_get_sitter',
+  'juggle_get_reviews',
+  'juggle_list_conversations',
+  'juggle_get_conversation',
+];
+
+describe('untrusted-output warnings', () => {
+  it('every tool returning third-party text says so at the end of its description', async () => {
+    const tools = await servedTools();
+    for (const name of UNTRUSTED_TOOLS) {
+      const t = tools.find((x) => x.name === name);
+      expect(t, name).toBeDefined();
+      expect((t!.description ?? '').endsWith(` ${UNTRUSTED_DESCRIPTION_SUFFIX}`), name).toBe(true);
+    }
+  });
+
+  it('tools that return no third-party text do not carry the warning', async () => {
+    for (const t of await servedTools()) {
+      if (UNTRUSTED_TOOLS.includes(t.name)) continue;
+      expect(t.description ?? '', t.name).not.toContain(UNTRUSTED_DESCRIPTION_SUFFIX);
     }
   });
 });

@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/server';
-import { IsoDate, IsoTime, McpToolError, toolAnnotations } from '@chrischall/mcp-utils';
+import { IsoDate, IsoTime, McpToolError, UNTRUSTED_DESCRIPTION_SUFFIX, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { JuggleClient, PageQuery } from '../client.js';
 import { SERVICES } from './bookings.js';
@@ -182,7 +182,9 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
     {
       title: "Get a Juggle sitter's profile",
       description:
-        "Get one Juggle sitter's public profile: rating, jobs completed, 'mom approved' since, background check, services offered, childcare / special-needs experience, college and major, certifications, kid age range, pet experience, homework help, driver's license / car, bio, whether they are a favorite and whether you can message them. profile_id comes from juggle_list_sitters, juggle_list_favorites or a booking's applicants. Private details (phone, birthdate, emergency contacts, background-check answers, social handles) are never returned on any view.",
+        "Get one Juggle sitter's public profile: rating, jobs completed, 'mom approved' since, background check, services offered, childcare / special-needs experience, college and major, certifications, kid age range, pet experience, homework help, driver's license / car, bio, whether they are a favorite and whether you can message them. profile_id comes from juggle_list_sitters, juggle_list_favorites or a booking's applicants. Private details (phone, birthdate, emergency contacts, background-check answers, social handles) are never returned on any view." +
+        ' ' +
+        UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: "Get a Juggle sitter's profile", readOnly: true, openWorld: true }),
       inputSchema: z.object({
         profile_id: JuggleId.describe("The sitter's profileId (NOT accountId)."),
@@ -206,7 +208,9 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
     {
       title: 'Get reviews of a Juggle sitter',
       description:
-        "Read the reviews other families left for a Juggle sitter (date, reviewer, star rating, text, whether the reviewer is your friend), newest as Juggle orders them, with the total count and average rating. account_id is the sitter's accountId (from juggle_list_sitters, juggle_get_sitter or a booking).",
+        "Read the reviews other families left for a Juggle sitter (date, reviewer, star rating, text, whether the reviewer is your friend), newest as Juggle orders them, with the total count and average rating. account_id is the sitter's accountId (from juggle_list_sitters, juggle_get_sitter or a booking)." +
+        ' ' +
+        UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: 'Get Juggle sitter reviews', readOnly: true, openWorld: true }),
       inputSchema: z.object({
         account_id: JuggleId.describe("The sitter's accountId (NOT profileId)."),
