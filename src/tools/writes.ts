@@ -1,7 +1,7 @@
 // The confirm-gated writes (owner scope): post a sit, accept / decline an
 // applicant, cancel a booking, send a message, favorite / unfavorite a sitter,
 // leave a review. Every request shape is lifted from the site's own JS bundle
-// (call sites cited per tool). Favorite/unfavorite are verified live (2026-11-03); the rest are UNVERIFIED against a signed-in account
+// (call sites cited per tool). Favorite/unfavorite, post job and cancel are verified live (2026-11-03); the rest are UNVERIFIED against a signed-in account
 // until the live pass — see docs/JUGGLE-API.md §4.
 //
 // Money: nothing here moves money. post_job always sends the bonus / autopay /

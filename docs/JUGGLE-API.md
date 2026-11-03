@@ -299,7 +299,7 @@ accept-job/decline-job (sitter), admin routes, group-admin routes,
 
 ## 4. Writes
 
-Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **Favorite / unfavorite: VERIFIED live 2026-11-03** (owner-approved: favorite → unfavorite → favorite on 4 booked sitters, re-read after each step, all ended favorited). Every other write is still UNVERIFIED live — its shape comes from the bundle's call sites.
+Implemented in `src/tools/writes.ts` (confirm-gated, `defineWrite` + `registerWrite`). Single accept/decline sends `{}` (the UI passes `forAll` only for "… for All Jobs"); favorites and reviews accept a non-JSON 2xx because the UI ignores those bodies. **Favorite / unfavorite: VERIFIED live 2026-11-03** (owner-approved: favorite → unfavorite → favorite on 4 booked sitters, re-read after each step, all ended favorited). **Post job + cancel: VERIFIED live 2026-11-03** (owner-approved throwaway sit, not on Open Jobs, no invite, cancelled at once with no penalty — see the log). Accept / decline, send message and leave review are still UNVERIFIED live — its shape comes from the bundle's call sites.
 
 All carry the §2 headers; JSON bodies. Responses commonly use
 `{error: true, msg}` **with HTTP 200** for business failures — a 200 is not
@@ -307,10 +307,10 @@ success until `error` is checked.
 
 | Tool | Method + path | Body (from call site) | Response (bundle) | Chunk |
 |---|---|---|---|---|
-| `juggle_post_job` | `POST /bookings` | see below | `{error, msg}`; success → no id returned (UI just shows success) | 8383 / 6364 |
+| `juggle_post_job` | `POST /bookings` | see below | live: **200 `{success: true}`, no id** — the tool finds the new booking in `GET /bookings` (worked live) | 8383 / 6364 |
 | `juggle_accept_sitter` | `PATCH /bookings/{bookingId}/accept-sitter/{sitterAccountId}` | `{forAll?: bool}` (true = all open jobs in a reoccurring series) | `{error?, msg?, status, displayStatus, numBookedSitters, bookingSitters, bookingRequests}` | 6891 |
 | `juggle_decline_sitter` | `PATCH /bookings/{bookingId}/decline-sitter/{sitterAccountId}` | `{forAll?: bool}` | `{bookingSitters, bookingRequests}` | 6891 |
-| `juggle_cancel_booking` | `PATCH /bookings/{bookingId}/cancel` | `{requireCancellationPenalty, cancellationReason, otherCancellationReason, cancellationPenalty}` | `{error, msg}` / `{confirmationRequired, paymentIntent, cancellationFee, bookingSitterFees, …}` / `{redirectToBookings}` | 1256 |
+| `juggle_cancel_booking` | `PATCH /bookings/{bookingId}/cancel` | `{requireCancellationPenalty, cancellationReason, otherCancellationReason, cancellationPenalty}` | live (no penalty): **200 with an EMPTY body** → reported `canceled: true`, booking then `canceled`. Bundle: `{error, msg}` / `{confirmationRequired, …}` / `{redirectToBookings}` | 1256 |
 | `juggle_send_message` | `POST /messages` | `{conversationId, type: "text", content}` | `{error?, msg?, messages: [...]}` (full refreshed thread) | 8628 |
 | `juggle_favorite_sitter` | `POST /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
 | `juggle_unfavorite_sitter` | `DELETE /favorites/{sitterAccountId}` | none | (ignored by UI) | 7250 |
@@ -418,7 +418,7 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
 - [x] `GET /payments` keys + the three JSON helpers; confirm nothing secret leaks into the projection.
 - [x] `GET /notifications` path (§3.13) — `data.notifications[]`; item keys unchecked (empty list).
 - [x] `GET /bookings/create` path (+ `/{sitterAccountId}`) and `lists.*` option shapes, `baseRates` keyed or flat. **Flat; no `serviceAreaId`** (§3.14). The `/{sitterAccountId}` variant is still unchecked.
-- [ ] `GET /bookings/{id}/cancel` and `GET /reviews/create/{bookingId}/{accountId}` shapes.
+- [x] `GET /bookings/{id}/cancel` (its reason list drove a live cancel) — [ ] and `GET /reviews/create/{bookingId}/{accountId}` shapes.
 - [ ] Writes — only with the owner's explicit go-ahead per call, on throwaway data: `POST /bookings` (then cancel it), favorite/unfavorite round-trip, send a message to a known contact, accept/decline on a real application, leave a review on a completed booking. Record the success body for each (does `POST /bookings` return an id?).
 - [ ] Whether a 2xx with `{error:true}` vs a 4xx/422 is used for validation failures on each write.
 - [ ] `X-Client: Website` and `timestamp` param — required or ignorable?
@@ -433,5 +433,10 @@ into the fixtures/doc. Tick each item and drop UNVERIFIED from its section.
   did not recognise it (it only knew `meta.page === "LogIn"`), so an expired session surfaced as an error instead of
   the one re-login + replay; fixed.
 - `GET /bookings/create` (PostAJob) shape checked (§3.14); `juggle_post_job`'s preview built correctly from it (not sent).
-- Writes: favorite / unfavorite verified (above). Post job, accept / decline sitter, cancel, send message and leave review
+- Post job → cancel (owner-approved, one throwaway sit 2027-01-14, `postOnOpenJobs:false`, no invite): `POST /bookings`
+  → 200 `{"success":true}` (no id; the `/bookings` lookup identified it, status `open`); `GET /bookings/{id}/cancel`
+  listed 7 reasons; `PATCH /bookings/{id}/cancel` with no penalty → 200, empty body; booking then `canceled`.
+  Login + `GET /` token refresh, then the writes, used the post-login CSRF token — whether the PRE-login token
+  would also work is still unchecked.
+- Writes: favorite / unfavorite verified (above). Accept / decline sitter, send message and leave review
   reach other people and were deliberately NOT exercised; their request shapes are bundle-derived.
