@@ -8,8 +8,11 @@ confirmation-gated booking changes.
 > Developed and maintained by AI (Claude Code). Not affiliated with Juggle.
 > The site has no public API; this server signs in with your email and
 > password and uses the same routes the website does. Those routes were mapped
-> from the site's JavaScript and are **not yet verified against a signed-in
-> account** — see [`docs/JUGGLE-API.md`](docs/JUGGLE-API.md).
+> from the site's JavaScript. Every read tool and the favorite / unfavorite
+> writes have been **verified against a signed-in family account** (2026-11-03);
+> the other writes (post a sit, accept / decline a sitter, cancel, message,
+> review) reach other people and are **not yet verified live** — see
+> [`docs/JUGGLE-API.md`](docs/JUGGLE-API.md).
 
 ## Setup
 
