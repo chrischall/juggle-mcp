@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "MCP server for Juggle (whyjuggle.com) — natural-language access to your family account's sits, sitters and messages",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {
@@ -15,7 +15,7 @@
       "displayName": "Juggle",
       "source": "./",
       "description": "MCP server for Juggle (whyjuggle.com) — browse your sits and sitters, read messages, and post or manage sits via natural language",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Chris Hall"
       },
