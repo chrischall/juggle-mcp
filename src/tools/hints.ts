@@ -85,12 +85,27 @@ export function briefDate(v: unknown): string {
   return m[2] ? `${m[1]}T${m[2]}` : m[1];
 }
 
-/** `title — date — status`, the title cut with an ellipsis to keep the line ≤ 120. */
+/** The shortest a title is cut to before the status gives way too. */
+const TITLE_FLOOR = 24;
+
+const cut = (s: string, n: number): string => (s.length > n ? `${s.slice(0, Math.max(n - 1, 0))}…` : s);
+
+/**
+ * `title — date — status`, cut to ≤ 120 chars as a WHOLE, title first: the
+ * title shortens until the line fits, and if the status alone would still
+ * overflow once the title is at its floor, the status is cut as well. A title
+ * that starts with `-- ` or `\` is escaped with one leading `\`, so an item
+ * can never read as a note (the gateway strips one backslash from every item).
+ */
 export function briefLine(title: string | undefined, date: string, status: string): string {
-  const tail = ` — ${date} — ${status}`;
-  const shown = flat(title) ?? '(untitled)';
-  const room = BRIEF_MAX - tail.length;
-  return `${shown.length > room ? `${shown.slice(0, Math.max(room - 1, 0))}…` : shown}${tail}`;
+  const raw = flat(title) ?? '(untitled)';
+  const shown = raw.startsWith('-- ') || raw.startsWith('\\') ? `\\${raw}` : raw;
+  const sep = ` — ${date} — `;
+  const room = BRIEF_MAX - sep.length;
+  if (shown.length + status.length <= room) return `${shown}${sep}${status}`;
+  const titleRoom = Math.max(room - status.length, Math.min(shown.length, TITLE_FLOOR));
+  const t = cut(shown, titleRoom);
+  return `${t}${sep}${cut(status, room - t.length)}`;
 }
 
 /**
