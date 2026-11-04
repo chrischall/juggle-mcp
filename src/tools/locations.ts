@@ -3,6 +3,7 @@ import { stripHtml, toolAnnotations } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { JuggleClient } from '../client.js';
 import { isRec, list, rec, respond, str, viewInput, type Rec } from './shared.js';
+import { familyMeta } from './hints.js';
 
 /** Juggle's own rate prose (first-party HTML) → one readable line. */
 function readable(html: unknown): string | undefined {
@@ -18,6 +19,7 @@ export function registerLocationTools(server: McpServer, client: JuggleClient): 
       description:
         "List the cities Juggle serves (by state) with each city's published babysitting and petsitting hourly rates and support email, from Juggle's public Locations page. Needs no sign-in. Optional state filter (e.g. \"North Carolina\").",
       annotations: toolAnnotations({ title: 'List Juggle cities and rates', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup'),
       inputSchema: z.object({
         state: z.string().min(2).max(60).optional().describe('Only this US state (full name, case-insensitive).'),
         view: viewInput('compact: state, city and the rate text as plain text. "full" returns the upstream state → locations map (rates as HTML); "raw" the same, indented.'),

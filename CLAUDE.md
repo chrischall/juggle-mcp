@@ -70,8 +70,9 @@ src/
   version.ts        # VERSION (release-please marker)
   tools/index.ts    # toolRegistrars — the list index.ts serves and the tests drive
   tools/*.ts        # register<Area>Tools(server, client)
-  tools/writes.ts   # the confirm-gated writes (defineWrite + registerWrite)
-  tools/write-kit.ts # write annotations, injection rule, sendOnce (writeOrUnknown)
+  tools/writes.ts   # the confirm-gated writes (defineWrite + registerHintedWrite)
+  tools/write-kit.ts # write annotations, injection rule, sendOnce, WRITE_HINTS + registerHintedWrite
+  tools/hints.ts    # context-group `_meta.mint` (family) + the `view: "brief"` rung
 tests/              # vitest; FakeSite in helpers.ts is an in-memory whyjuggle.com
 docs/JUGGLE-API.md  # the bundle-derived API map + live verification checklist
 ```
@@ -89,6 +90,10 @@ admin routes. Cancel must never send `cancellationPenalty: "cancellationFee"`.
 - Every new tool module goes in `src/tools/index.ts` and its tools in
   `manifest.json` `tools[]` — `tests/index.test.ts` checks the roster both ways
   and that every write states a boolean `destructiveHint` and takes `confirmToken`.
+- Every tool but the healthcheck carries `_meta.mint` (`familyMeta`); a write
+  gets its hint from `WRITE_HINTS` via `registerHintedWrite` (a missing entry
+  throws at registration). `tests/hints.test.ts` holds the intent table for
+  every served tool, so a new tool fails it until it is decided.
 - Fixtures are synthetic (`Test Sitter`, ids like 1001, `@example.com`) —
   never paste real account data, cookies or tokens.
 - `npm test` runs both typechecks (`tsconfig.json` + `tsconfig.test.json`)

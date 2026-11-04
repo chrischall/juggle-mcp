@@ -9,13 +9,13 @@
 // `cancellationFee` penalty (that path charges a card through Stripe).
 
 import type { McpServer } from '@modelcontextprotocol/server';
-import { IsoDate, IsoTime, McpToolError, defineWrite, registerWrite } from '@chrischall/mcp-utils';
+import { IsoDate, IsoTime, McpToolError, defineWrite } from '@chrischall/mcp-utils';
 import { z } from 'zod';
 import type { JuggleClient } from '../client.js';
 import { SERVICES } from './bookings.js';
 import { readFavorites } from './sitters.js';
 import { JuggleId, flag, list, num, rec, requireList, str, usd, type Rec } from './shared.js';
-import { sendOnce, writeAnnotations, writeDescription, writeResult } from './write-kit.js';
+import { registerHintedWrite, sendOnce, writeAnnotations, writeDescription, writeResult } from './write-kit.js';
 
 const checkBooking = (id: number) => `the booking on whyjuggle.com (juggle_get_booking booking_id=${id})`;
 
@@ -71,7 +71,7 @@ async function readApplicant(client: JuggleClient, bookingId: number, sitterAcco
 
 export function registerWriteTools(server: McpServer, client: JuggleClient): void {
   // -------------------------------------------------------------- post a job
-  registerWrite(
+  registerHintedWrite(
     server,
     defineWrite({
       name: 'juggle_post_job',
@@ -234,7 +234,7 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
   // ---------------------------------------------------- accept / decline
   for (const verb of ['accept', 'decline'] as const) {
     const name = `juggle_${verb}_sitter`;
-    registerWrite(
+    registerHintedWrite(
       server,
       defineWrite({
         name,
@@ -310,7 +310,7 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
   }
 
   // ------------------------------------------------------------- cancel
-  registerWrite(
+  registerHintedWrite(
     server,
     defineWrite({
       name: 'juggle_cancel_booking',
@@ -405,7 +405,7 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
   );
 
   // ------------------------------------------------------------ message
-  registerWrite(
+  registerHintedWrite(
     server,
     defineWrite({
       name: 'juggle_send_message',
@@ -467,7 +467,7 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
   // -------------------------------------------------- favorite / unfavorite
   for (const add of [true, false]) {
     const name = add ? 'juggle_favorite_sitter' : 'juggle_unfavorite_sitter';
-    registerWrite(
+    registerHintedWrite(
       server,
       defineWrite({
         name,
@@ -520,7 +520,7 @@ export function registerWriteTools(server: McpServer, client: JuggleClient): voi
   }
 
   // ------------------------------------------------------------- review
-  registerWrite(
+  registerHintedWrite(
     server,
     defineWrite({
       name: 'juggle_leave_review',

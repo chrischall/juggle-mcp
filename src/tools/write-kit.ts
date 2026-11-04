@@ -3,8 +3,17 @@
 // registered with `registerWrite`, so the preview / confirmToken gate is the
 // shared one from @chrischall/mcp-utils.
 
-import { CONFIRM_INJECTION_RULE, minifiedResult, toolAnnotations, writeOrUnknown } from '@chrischall/mcp-utils';
-import type { CallToolResult } from '@modelcontextprotocol/server';
+import {
+  CONFIRM_INJECTION_RULE,
+  minifiedResult,
+  registerWrite,
+  toolAnnotations,
+  writeOrUnknown,
+  type WriteDefinition,
+} from '@chrischall/mcp-utils';
+import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
+import type { z } from 'zod';
+import { familyMeta, withMeta, type MintMeta } from './hints.js';
 
 /**
  * Annotations for a write. `destructive` follows the fleet rule: is there an
@@ -51,4 +60,34 @@ export async function sendOnce<T>(run: () => Promise<T>, what: string, checkWith
 /** A write's result as compact JSON. */
 export function writeResult(result: unknown): CallToolResult {
   return minifiedResult(result);
+}
+
+/**
+ * Each write's context-group hint. Posting a sit, booking/declining a sitter,
+ * cancelling, favoriting and reviewing CHANGE the family's Juggle state;
+ * messaging a sitter is a SEND. A write is never canonical.
+ */
+export const WRITE_HINTS: Readonly<Record<string, MintMeta>> = {
+  juggle_post_job: familyMeta('change', { aliases: ['book a babysitter', 'book a sitter', 'find a sitter for', 'post a sit', 'pet sitter'] }),
+  juggle_accept_sitter: familyMeta('change', { aliases: ['book the sitter', 'accept the babysitter'] }),
+  juggle_decline_sitter: familyMeta('change', { aliases: ['decline the sitter', 'turn down the sitter'] }),
+  juggle_cancel_booking: familyMeta('change', { aliases: ['cancel the babysitter', 'cancel the sit'] }),
+  juggle_send_message: familyMeta('send', { aliases: ['message the sitter', 'text the babysitter', 'tell the sitter'] }),
+  juggle_favorite_sitter: familyMeta('change', { aliases: ['favorite the sitter'] }),
+  juggle_unfavorite_sitter: familyMeta('change', { aliases: ['unfavorite the sitter'] }),
+  juggle_leave_review: familyMeta('change', { aliases: ['review the sitter', 'rate the babysitter'] }),
+};
+
+/**
+ * `registerWrite` with the write's `_meta.mint` attached (mcp-utils'
+ * `registerWrite` takes no `_meta`). A write missing from `WRITE_HINTS` is a
+ * registration-time error, so a new write cannot ship unhinted.
+ */
+export function registerHintedWrite<Schema extends z.ZodObject, State, Result>(
+  server: McpServer,
+  def: WriteDefinition<Schema, State, Result>,
+): void {
+  const meta = WRITE_HINTS[def.name];
+  if (!meta) throw new Error(`${def.name} has no context-group hint in WRITE_HINTS.`);
+  registerWrite(withMeta(server, meta), def);
 }

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { JuggleClient } from '../client.js';
 import type { JuggleUser } from '../page.js';
 import { flag, limitInput, list, num, optionName, pickScalars, rec, respond, str, usd, viewInput, type Rec } from './shared.js';
+import { familyMeta } from './hints.js';
 
 // ------------------------------------------------------------------ profile
 
@@ -193,6 +194,7 @@ export function registerAccountTools(server: McpServer, client: JuggleClient): v
       description:
         "Show your Juggle (whyjuggle.com) family account profile: name, email, service area (city), membership/subscription status, unread message count, job stats (posted/completed/canceled, rating), saved addresses with their ids (needed to post a sit), pets, and the number of kids. Kids' names, birthdays, grades and allergies are included ONLY when include_kids is true. Never returns phone numbers, emergency contacts or house instructions, on any view.",
       annotations: toolAnnotations({ title: 'Get your Juggle family profile', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup'),
       inputSchema: z.object({
         include_kids: z.boolean().optional().describe("Also return each kid's name, birthday, gender, grade, hobbies, foods, allergies and notes (default false)."),
         view: viewInput(
@@ -214,6 +216,7 @@ export function registerAccountTools(server: McpServer, client: JuggleClient): v
       description:
         "Show your Juggle payments overview: your city's hourly sitting rates and booking fee (babysitting by number of kids, petsitting by number of pets, multi-sitter), saved cards (brand, last 4, expiry, which is default), membership subscription, promo codes/credits remaining, and recent transactions (amount, tip, booking, sitter). Amounts are in US dollars (…Usd); full view adds the raw integer cents (…Cents). Read-only: never charges, tips or changes a card, and never returns Stripe secrets or card ids.",
       annotations: toolAnnotations({ title: 'Get Juggle payments, rates and transactions', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup', { aliases: ['sitter payments', 'babysitting rates'] }),
       inputSchema: z.object({
         transactions_limit: limitInput(20, 200, 'most recent transactions'),
         view: viewInput(

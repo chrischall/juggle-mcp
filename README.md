@@ -53,7 +53,9 @@ automatically.
 | `juggle_list_locations` | Cities Juggle serves and their published babysitting/petsitting rates (no sign-in needed) |
 
 Reads take `view`: `compact` (default) is a small projection, while `full` and
-`raw` return more upstream fields. On the profile, sitter and payments tools,
+`raw` return more upstream fields. `juggle_list_bookings` and
+`juggle_list_conversations` also take `brief` (one line per item, for
+mcp-host's context groups; see the skill's "In context groups"). On the profile, sitter and payments tools,
 even `raw` stays inside the privacy allowlists. The private fields on a
 sitter's profile row (phone, birthdate, emergency contacts, background-check
 answers, social handles), the family's phone numbers and house instructions,
