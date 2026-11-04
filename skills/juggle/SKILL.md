@@ -151,3 +151,27 @@ unfavoriting, or leaving a review, use the juggle-mcp tools
 (`juggle_post_job`, `juggle_accept_sitter`, …). Each one previews first and
 needs a `confirmToken` before it sends anything. Nothing that moves money
 (tips, payments, fees, subscriptions) exists in either the skill or the MCP.
+
+## In context groups
+
+When juggle-mcp is hosted on mcp-host, its tools join the **family** group
+(`_meta.mint` on every tool but `juggle_healthcheck`). Two reads are the
+group's canonical answers, each with `view: "brief"` — one line per item,
+`title — <ISO date | no date> — <status>`, inside the untrusted-data
+envelope because sitter names and message text are written by other Juggle
+users; a `-- ` line is a note (`-- none`, `-- N of M shown`):
+
+- **what's on** — `juggle_list_bookings`: your active sits, soonest first
+  (`Babysitting with <sitter> — 2026-11-10T17:00 — booked`; an open sit shows
+  its waiting applications).
+- **what's new** — `juggle_list_conversations`: conversations with unread
+  messages (`<sitter>: <last message> — <when> — 1 unread`).
+
+Neither takes a subject (one family account, nothing to list) or a date
+range. Nothing in Juggle answers "what's due", so that question gets no
+Juggle lines. A compound ask such as "what's on with the babysitter, and any new
+messages from the sitter?" reaches these reads through the group's intent
+call, not by tool name. Juggle signs in server-side with the family's email
+and password, with no browser bridge, so the group never answers "needs your
+browser open" for it; a sign-in problem surfaces as the tool's own error.
+The writes carry `change` / `send` hints only and are never canonical.

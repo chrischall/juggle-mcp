@@ -5,6 +5,7 @@ import type { JuggleClient } from '../client.js';
 import {
   JuggleId,
   UNTRUSTED_NOTES,
+  VIEWS,
   flag,
   limitInput,
   list,
@@ -18,6 +19,7 @@ import {
   viewInput,
   type Rec,
 } from './shared.js';
+import { briefDate, briefLine, briefResponse, briefViewInput, familyMeta } from './hints.js';
 
 /** Every booking status the site defines (live `bookingStatusColorsMap`). */
 export const BOOKING_STATUSES = [
@@ -123,6 +125,22 @@ function pickScalarsDefined(o: unknown): Rec {
   return Object.fromEntries(Object.entries(all).filter(([, v]) => v !== null && v !== ''));
 }
 
+/**
+ * One booking as a brief line: `<service> with <sitter>` (or `, no sitter
+ * yet`) — start — status, plus the waiting applications on an open one.
+ */
+function briefBooking(item: unknown, statusLabels: Rec, serviceLabels: Rec): string {
+  const b = rec(item);
+  const service = str(b.serviceType) ?? str(b.type);
+  const serviceLabel = (service && str(serviceLabels[service])) ?? service ?? 'Sit';
+  const sitter = str(b.name);
+  const st = str(b.status);
+  const label = (st && str(statusLabels[st])?.toLowerCase()) ?? st?.replace(/_/g, ' ') ?? 'unknown status';
+  const apps = num(b.numPendingApplications) ?? 0;
+  const status = apps > 0 ? `${label}, ${apps} application${apps === 1 ? '' : 's'}` : label;
+  return briefLine(sitter ? `${serviceLabel} with ${sitter}` : `${serviceLabel}, no sitter yet`, briefDate(b.startDateTime), status);
+}
+
 /** The bundle's Stripe plan rows — nothing a caller acts on in a booking. */
 function withoutPlans(data: unknown): unknown {
   const { subscriptionPlan: _m, subscriptionYearlyPlan: _y, ...rest } = rec(data);
@@ -137,6 +155,10 @@ export function registerBookingTools(server: McpServer, client: JuggleClient): v
       description:
         'List your Juggle babysitting / petsitting bookings (the sits or jobs you posted): status (open, booked, in progress, awaiting payment/review, completed, canceled…), service, start date/time, the booked sitter, and how many sitter applications are waiting. status "active" (default) = still in play, "past" = completed/canceled/declined/expired/archived, "all"; or pass exact statuses. Sorted by start time. Use juggle_get_booking for applicants and details.',
       annotations: toolAnnotations({ title: 'List your Juggle bookings', readOnly: true, openWorld: true }),
+      _meta: familyMeta('whats-on', {
+        canonical: true,
+        aliases: ['babysitter', 'babysitting', 'sitter', 'pet sitter', 'sits', 'who is babysitting', 'childcare'],
+      }),
       inputSchema: z.object({
         status: z.enum(['active', 'past', 'all']).optional().describe('Which bookings: "active" (default), "past" or "all". Ignored when statuses is given.'),
         statuses: z.array(z.enum(BOOKING_STATUSES)).min(1).optional().describe('Exact booking statuses to include (overrides status).'),
@@ -144,8 +166,9 @@ export function registerBookingTools(server: McpServer, client: JuggleClient): v
         order: z.enum(['asc', 'desc']).optional().describe('By start time: "asc" soonest/oldest first (default) or "desc".'),
         limit: limitInput(50, 200, 'bookings'),
         offset: offsetInput('bookings'),
-        view: viewInput(
-          'compact: id, status (+label), service, start, sitter name, pending applications, recurring series. "full" returns the matching upstream booking items plus the status/service label maps; "raw" the whole page data with the list filtered.',
+        view: briefViewInput(
+          VIEWS,
+          'compact: id, status (+label), service, start, sitter name, pending applications, recurring series. "full" returns the matching upstream booking items plus the status/service label maps; "raw" the whole page data with the list filtered. A brief title is the service and the booked sitter; its status is the booking status plus any waiting applications.',
         ),
       }),
     },
@@ -184,6 +207,10 @@ export function registerBookingTools(server: McpServer, client: JuggleClient): v
       };
       const labels = { statuses: rec(data.bookingStatusesMap), services: rec(data.serviceTypesMap) };
       const full = { ...head, bookings: slice, bookingStatusesMap: data.bookingStatusesMap, serviceTypesMap: data.serviceTypesMap };
+      if (view === 'brief') {
+        const lines = slice.map((b) => briefBooking(b, labels.statuses, labels.services));
+        return briefResponse(lines, slice.length, matched.length, UNTRUSTED_NOTES.booking);
+      }
       if (view === 'raw') return respond(view, { ...head, ...data, bookings: slice }, { context: 'GET /bookings' });
       return respond(view, full, {
         context: 'GET /bookings',
@@ -201,6 +228,7 @@ export function registerBookingTools(server: McpServer, client: JuggleClient): v
         ' ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: 'Get a Juggle booking', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup', { aliases: ['sitter applicants', 'who applied'] }),
       inputSchema: z.object({
         booking_id: JuggleId.describe('The booking id (bookingId from juggle_list_bookings).'),
         view: viewInput(

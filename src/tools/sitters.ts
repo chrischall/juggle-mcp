@@ -20,6 +20,7 @@ import {
   viewInput,
   type Rec,
 } from './shared.js';
+import { familyMeta } from './hints.js';
 
 // ---------------------------------------------------------------- sitter list
 
@@ -148,6 +149,7 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
       description:
         "Search the Juggle sitters (babysitters, petsitters, nannies — college-student 'Squad') in your city: name, location, rating, jobs completed, background check, whether they are a favorite and how many of your friends booked them. Optional filters: available on a date between start_time and end_time, services, keywords, name. Returns profileId (for juggle_get_sitter) and accountId (for favorites, reviews and booking invites). Use juggle_list_favorites for just your favorites.",
       annotations: toolAnnotations({ title: 'Find Juggle sitters', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup', { aliases: ['find a babysitter', 'find a sitter', 'pet sitter'] }),
       inputSchema: z.object({
         date: IsoDate.optional().describe('Only sitters available on this date (YYYY-MM-DD). Needs start_time and end_time.'),
         start_time: IsoTime.optional().describe('Availability window start, HH:MM 24h (with date).'),
@@ -180,6 +182,7 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
       description:
         "List the sitters you have marked as favorites on Juggle: name, location, rating, jobs completed, background check. Returns profileId (for juggle_get_sitter) and accountId (for reviews, unfavoriting and booking invites).",
       annotations: toolAnnotations({ title: 'List favorite Juggle sitters', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup', { aliases: ['favorite sitters', 'our sitters'] }),
       inputSchema: z.object({
         view: viewInput('compact: ids, name, location, rating, jobs completed, background check. "full" returns the upstream sitter items; "raw" the whole page data.'),
       }),
@@ -203,6 +206,7 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
         ' ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: "Get a Juggle sitter's profile", readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup'),
       inputSchema: z.object({
         profile_id: JuggleId.describe("The sitter's profileId (NOT accountId)."),
         view: viewInput(
@@ -229,6 +233,7 @@ export function registerSitterTools(server: McpServer, client: JuggleClient): vo
         ' ' +
         UNTRUSTED_DESCRIPTION_SUFFIX,
       annotations: toolAnnotations({ title: 'Get Juggle sitter reviews', readOnly: true, openWorld: true }),
+      _meta: familyMeta('lookup'),
       inputSchema: z.object({
         account_id: JuggleId.describe("The sitter's accountId (NOT profileId)."),
         limit: limitInput(20, 100, 'reviews'),
