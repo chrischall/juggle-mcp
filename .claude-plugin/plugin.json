@@ -1,7 +1,7 @@
 {
   "name": "juggle-mcp",
   "displayName": "Juggle",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server for Juggle (whyjuggle.com) — natural-language access to your family account's sits, sitters and messages",
   "author": {
     "name": "Chris Hall",
