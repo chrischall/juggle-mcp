@@ -177,6 +177,34 @@ describe('juggle_list_bookings view "brief"', () => {
     expect(envelope(r.text).data).toEqual(['Babysitting, no sitter yet — no date — awaiting payment']);
   });
 
+  it('escapes a title that starts with "-- " or "\\" with one leading backslash, so it never reads as a note', async () => {
+    const odd = {
+      ...bookingsData,
+      serviceTypesMap: { ...bookingsData.serviceTypesMap, babysitting: '-- none' },
+      bookings: [{ ...bookingsData.bookings[1] }],
+    };
+    const r = await callTool(makeClient(site(odd)), 'juggle_list_bookings', { view: 'brief' });
+    expect(envelope(r.text).data).toEqual(['\\-- none with Test Sitter — 2026-11-10T17:00 — booked']);
+    const slash = { ...odd, serviceTypesMap: { ...bookingsData.serviceTypesMap, babysitting: '\\Sit' } };
+    const s = await callTool(makeClient(site(slash)), 'juggle_list_bookings', { view: 'brief' });
+    expect(envelope(s.text).data).toEqual(['\\\\Sit with Test Sitter — 2026-11-10T17:00 — booked']);
+  });
+
+  it('cuts the line as a WHOLE to 120 chars when the status alone would overflow', async () => {
+    const longStatus = 'X'.repeat(150);
+    const odd = {
+      ...bookingsData,
+      bookingStatusesMap: { ...bookingsData.bookingStatusesMap, booked: longStatus },
+      bookings: [{ ...bookingsData.bookings[1] }],
+    };
+    const r = await callTool(makeClient(site(odd)), 'juggle_list_bookings', { view: 'brief' });
+    const [line] = envelope(r.text).data;
+    expect(line.length).toBeLessThanOrEqual(120);
+    expect(line.startsWith('Babysitting with')).toBe(true);
+    expect(line).toContain(' — 2026-11-10T17:00 — ');
+    expect(line.endsWith('…')).toBe(true);
+  });
+
   it('leaves the default view unchanged', async () => {
     const r = await callTool(makeClient(site()), 'juggle_list_bookings');
     expect(r.json).toMatchObject({ filter: { status: 'active' }, matched: 2 });
@@ -205,6 +233,12 @@ describe('juggle_list_conversations view "brief"', () => {
     const multi = { ...conversationsData, conversations: [{ ...conversationsData.conversations[0], lastMessage: 'See you\n\nFriday!' }] };
     const r = await callTool(makeClient(site(multi)), 'juggle_list_conversations', { view: 'brief' });
     expect(envelope(r.text).data).toEqual(['Test Sitter: See you Friday! — 2026-11-01T09:00 — 1 unread']);
+  });
+
+  it('escapes a conversation whose name starts with "-- "', async () => {
+    const odd = { ...conversationsData, conversations: [{ ...conversationsData.conversations[0], name: '-- none' }] };
+    const r = await callTool(makeClient(site(odd)), 'juggle_list_conversations', { view: 'brief' });
+    expect(envelope(r.text).data).toEqual(['\\-- none: See you Friday! — 2026-11-01T09:00 — 1 unread']);
   });
 
   it('notes a partial page and an empty one', async () => {

@@ -159,7 +159,9 @@ When juggle-mcp is hosted on mcp-host, its tools join the **family** group
 group's canonical answers, each with `view: "brief"` — one line per item,
 `title — <ISO date | no date> — <status>`, inside the untrusted-data
 envelope because sitter names and message text are written by other Juggle
-users; a `-- ` line is a note (`-- none`, `-- N of M shown`):
+users; a `-- ` line is a note (`-- none`, `-- N of M shown`), and an item
+whose title starts with `-- ` or `\` is escaped with one leading `\`; each
+line is cut to 120 chars as a whole, title first:
 
 - **what's on** — `juggle_list_bookings`: your active sits, soonest first
   (`Babysitting with <sitter> — 2026-11-10T17:00 — booked`; an open sit shows
