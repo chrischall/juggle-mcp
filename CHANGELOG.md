@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/chrischall/juggle-mcp/compare/v0.1.1...v0.2.0) (2026-11-04)
+
+
+### Features
+
+* context-group hints ([#9](https://github.com/chrischall/juggle-mcp/issues/9)) ([87c9437](https://github.com/chrischall/juggle-mcp/commit/87c9437466c007c6976723ccee4abab42b397b67))
+
+
+### Bug Fixes
+
+* **brief:** align the brief view with the fleet contract ([#10](https://github.com/chrischall/juggle-mcp/issues/10)) ([b615a94](https://github.com/chrischall/juggle-mcp/commit/b615a948b6dc2eb29333224ec0c0dfc674d6b40e))
+
 ## [0.1.1](https://github.com/chrischall/juggle-mcp/compare/v0.1.0...v0.1.1) (2026-11-03)
 
 
