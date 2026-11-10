@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/chrischall/juggle-mcp/compare/v0.2.0...v0.2.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **deps:** Bump @chrischall/mcp-utils from 3.4.0 to 3.7.2 in the production-dependencies group ([#12](https://github.com/chrischall/juggle-mcp/issues/12)) ([9f241e1](https://github.com/chrischall/juggle-mcp/commit/9f241e17ae6492d83abaae1cb4f3265a77c568cf))
+
 ## [0.2.0](https://github.com/chrischall/juggle-mcp/compare/v0.1.1...v0.2.0) (2026-11-04)
 
 
